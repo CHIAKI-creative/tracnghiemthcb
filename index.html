@@ -1,0 +1,4285 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <title>Hệ Thống Ôn Thi Trắc Nghiệm Pro</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" rel="stylesheet">
+
+  <style>
+    :root {
+      --primary-color: #4361ee;
+      --success-color: #2ec4b6;
+      --danger-color: #e63946;
+      --bg-gradient: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg-gradient);
+      min-height: 100vh;
+      color: #2b2d42;
+    }
+
+    /* Header Styling */
+    .header-section {
+      background: white;
+      border-bottom: 1px solid rgba(0,0,0,0.05);
+      padding: 2rem 0;
+      margin-bottom: 2rem;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.02);
+    }
+
+    /* Card Câu hỏi */
+    .question-card {
+      background: rgba(255, 255, 255, 0.9);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      border-radius: 16px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+      transition: transform 0.2s ease;
+    }
+
+    .question-card:hover {
+      transform: translateY(-3px);
+    }
+
+    .q-number {
+      background: var(--primary-color);
+      color: white;
+      padding: 4px 12px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      display: inline-block;
+    }
+
+    .card-title {
+      font-size: 1.1rem;
+      line-height: 1.5;
+      margin-bottom: 1.2rem;
+      color: #1a1c2c;
+    }
+
+    /* Answer Items */
+    .answer {
+      cursor: pointer;
+      padding: 12px 16px;
+      border-radius: 12px;
+      border: 2px solid #edf2f4;
+      background: white;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+    }
+
+    .answer:hover {
+      border-color: var(--primary-color);
+      background-color: #f0f3ff;
+    }
+
+    .answer-prefix {
+      width: 30px;
+      font-weight: 700;
+      color: var(--primary-color);
+    }
+
+    /* States */
+    .answer.correct {
+      background-color: #e7fcf6 !important;
+      border-color: var(--success-color) !important;
+      color: #0b6e4f;
+    }
+
+    .answer.correct::after {
+      content: '\f058';
+      font-family: 'Font Awesome 6 Free';
+      font-weight: 900;
+      position: absolute;
+      right: 15px;
+      color: var(--success-color);
+    }
+
+    .answer.wrong {
+      background-color: #fff1f2 !important;
+      border-color: var(--danger-color) !important;
+      color: #991b1b;
+    }
+
+    .answer.wrong::after {
+      content: '\f057';
+      font-family: 'Font Awesome 6 Free';
+      font-weight: 900;
+      position: absolute;
+      right: 15px;
+      color: var(--danger-color);
+    }
+
+    /* Floating Control Bar */
+    .control-bar {
+      position: sticky;
+      top: 20px;
+      z-index: 1000;
+      background: rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(12px);
+      padding: 10px;
+      border-radius: 50px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      max-width: fit-content;
+      margin: 0 auto 2rem;
+    }
+
+    .btn-mode {
+      border-radius: 40px;
+      padding: 8px 24px;
+      font-weight: 600;
+      transition: all 0.3s;
+    }
+
+    .btn-mode.active {
+      background: var(--primary-color);
+      color: white;
+      box-shadow: 0 4px 12px rgba(67, 97, 238, 0.3);
+    }
+
+    /* ProgressBar */
+    .progress-fixed {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 4px;
+      background: transparent;
+      z-index: 9999;
+    }
+    #progressBar {
+      height: 100%;
+      background: var(--primary-color);
+      width: 0%;
+      transition: width 0.3s;
+    }
+  </style>
+</head>
+
+<body>
+
+<div class="progress-fixed"><div id="progressBar"></div></div>
+
+<header class="header-section text-center">
+  <div class="container">
+    <h2 class="fw-bold mb-1">TRẮC NGHIỆM TIN HỌC CƠ BẢN</h2>
+    <p class="text-muted mb-0">Hệ thống ôn thi 400 câu hỏi chất lượng cao</p>
+  </div>
+</header>
+
+<div class="container">
+  <div class="control-bar d-flex gap-2">
+    <button id="modePractice" class="btn btn-mode active" onclick="switchMode('practice')">
+      <i class="fas fa-edit me-2"></i>Làm bài
+    </button>
+    <button id="modeReview" class="btn btn-mode btn-light" onclick="switchMode('review')">
+      <i class="fas fa-eye me-2"></i>Hiện đáp án
+    </button>
+  </div>
+
+  <div class="row mb-4">
+    <div class="col-md-8 mx-auto">
+      <div class="input-group mb-3">
+        <span class="input-group-text bg-white border-end-0"><i class="fas fa-search text-muted"></i></span>
+        <input type="text" id="searchInput" class="form-control border-start-0 ps-0" placeholder="Tìm kiếm nội dung câu hỏi...">
+      </div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-lg-8 col-md-10 mx-auto" id="questionContainer">
+      </div>
+  </div>
+</div>
+
+<script>
+  const questions =
+[
+  {
+    "question": "Adware là phần mềm gì?",
+    "answers": {
+      "A": "Là phần mềm quảng cáo thường gây khó chịu cho người dùng",
+      "B": "Là phần mềm thu thập các thông tin được gõ trên bàn phím",
+      "C": "Là phần mềm thu thập thông tin dữ liệu trong máy tính",
+      "D": "Là phần mềm mở cổng hậu để xâm nhập và gây hại máy tính"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Backdoor là phần mềm gì?",
+    "answers": {
+      "A": "Là phần mềm gây khó chịu cho người dùng bằng các chương trình quảng cáo",
+      "B": "Là phần mềm mở cổng hậu để xâm nhập và gây hại máy tính",
+      "C": "Là phần mềm thu thập các thông tin được gõ trên bàn phím",
+      "D": "Là phần mềm thu thập thông tin dữ liệu trong máy tính"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Bàn phím có thể kết nối với máy tính bằng loại cổng nào?",
+    "answers": {
+      "A": "HDMI",
+      "B": "DVI",
+      "C": "USB",
+      "D": "VGA"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Bàn phím máy tính thông dụng hiện nay có bao nhiêu phím chính?",
+    "answers": {
+      "A": "Trên 130 phím",
+      "B": "Từ 91 đến 104 phím",
+      "C": "Từ 101 đến 104 phím",
+      "D": "Từ 120 đến 130 phím"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Bảng vẽ đồ họa (graphic table) bao gồm các thiết bị nào?",
+    "answers": {
+      "A": "Bảng và bàn phím",
+      "B": "Bảng và chuột",
+      "C": "Bảng và bút vẽ",
+      "D": "Bảng và tai nghe"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Bộ Font chữ tích hợp tất cả các ký tự của đa số ngôn ngữ là bộ font chữ nào?",
+    "answers": {
+      "A": "VNI",
+      "B": "Unicode",
+      "C": "Vietware",
+      "D": "TCVN3"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Bộ nhớ đệm bên trong CPU được gọi là gì?",
+    "answers": {
+      "A": "Cache",
+      "B": "Register",
+      "C": "CU",
+      "D": "ALU"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Các chương trình trong bộ Microsoft Office thuộc loại phần mềm nào?",
+    "answers": {
+      "A": "Phần mềm hệ thống",
+      "B": "Phần mềm tiện ích",
+      "C": "Phần mềm lập trình",
+      "D": "Phần mềm ứng dụng"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Các font chữ Arial, Tahoma, Verdana thuộc bộ font chữ nào?",
+    "answers": {
+      "A": "Unicode",
+      "B": "VNI",
+      "C": "Vietware",
+      "D": "TCVN3"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Các loại cổng nào sau đây dùng để xuất tín hiệu ra màn hình máy tính?",
+    "answers": {
+      "A": "VGA, HDMI, DVI",
+      "B": "USB, RJ45, DVI",
+      "C": "VGA, USB, DVI",
+      "D": "HDMI, USB, COM"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Các phần mềm nào sau đây là phần mềm diệt Virus miễn phí?",
+    "answers": {
+      "A": "Norton Antivirus, Kaspersky, BKAV phiên bản Pro",
+      "B": "Kaspersky, Norton Antivirus, Avira Free Antivirus",
+      "C": "Norton Antivirus, Kaspersky, BKAV phiên bản Home",
+      "D": "Window Security, Avira Free Antivirus"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Các thiết bị điện của máy tính thường được tiếp đất, mục đích chính của việc này là gì?",
+    "answers": {
+      "A": "Bảo vệ an toàn cho người dùng",
+      "B": "Chống sét",
+      "C": "Chống nhiễu",
+      "D": "Bảo vệ an toàn cho thiết bị"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Chương trình dùng để duyệt trang web được gọi là gì?",
+    "answers": {
+      "A": "Website",
+      "B": "Webpage",
+      "C": "Web Browser",
+      "D": "Home page"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Chương trình Firewall trong máy tính cá nhân dùng để làm gì?",
+    "answers": {
+      "A": "Ngăn chặn virus từ bên ngoài vào máy tính",
+      "B": "Ngăn chặn các truy cập trái phép từ máy tính cá nhân đi ra ngoài",
+      "C": "Ngăn chặn các truy cập trái phép từ bên ngoài vào máy tính",
+      "D": "Ngăn chặn các truy cập trái phép từ bên ngoài vào máy tính và ngược lại"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Chương trình nào dưới đây không phải là chương trình diệt virus?",
+    "answers": {
+      "A": "Windows Firewall",
+      "B": "BKAV Home",
+      "C": "Kaspersky",
+      "D": "Anti Avira"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Chương trình Unikey cho phép chọn kiểu gõ tiếng Việt nào?",
+    "answers": {
+      "A": "Chỉ có Telex và VNI",
+      "B": "Chỉ có Telex",
+      "C": "Telex, VNI và một số kiểu gõ khác",
+      "D": "Chỉ có VNI"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Chương trình Unikey có thể chuyển mã văn bản tiếng Việt các tập tin dạng nào?",
+    "answers": {
+      "A": "TXT, DOCX",
+      "B": "TXT, RTF",
+      "C": "DOCX, RTF",
+      "D": "RTF, XLSX"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Cổng Audio thường kết xuất dữ liệu dạng nào?",
+    "answers": {
+      "A": "Âm thanh",
+      "B": "Vǎn bản",
+      "C": "Hình ảnh",
+      "D": "Phim"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Công dụng của phím ESC là gì?",
+    "answers": {
+      "A": "Thoát chương trình",
+      "B": "Thoát và khởi động lại chương trình",
+      "C": "Huỷ bỏ lệnh vừa thực hiện xong",
+      "D": "Hủy bỏ một lệnh đang thực hiện"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Cổng HDMI có những loại chuẩn nào sau đây?",
+    "answers": {
+      "A": "Chuẩn A, chuẩn C, chuẩn D",
+      "B": "Chuẩn B, chuẩn C, chuẩn D",
+      "C": "Chuẩn A, chuẩn B, chuẩn C",
+      "D": "Chuẩn B, chuẩn D, chuẩn E"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Cổng kết nối ngoài eSATA, trong đó chữ “e\" là viết tắt của từ nào?",
+    "answers": {
+      "A": "Ethernet",
+      "B": "Extended",
+      "C": "ELearning",
+      "D": "External"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Cổng nào dưới đây không thể kết nối với thiết bị chuột?",
+    "answers": {
+      "A": "PS/2",
+      "B": "USB",
+      "C": "HDMI",
+      "D": "COM"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Công ước Bern là công ước về bảo hộ tác phẩm vǎn học nghệ thuật được ký tại quốc gia nào?",
+    "answers": {
+      "A": "Bỉ",
+      "B": "Đức",
+      "C": "Ý",
+      "D": "Thụy Sĩ"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Dịch vụ công trực tuyến là gì?",
+    "answers": {
+      "A": "Dịch vụ của cơ quan nhà nước công chứng các tài sản có giá trị",
+      "B": "Dịch vụ của cơ quan nhà nước cung cấp cho các tổ chức, cá nhân trên mạng",
+      "C": "Dịch vụ của cơ quan nhà nước cung cấp trực tiếp cho các tổ chức, cá nhân",
+      "D": "Dịch vụ công chứng các tài sản có giá trị"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Dịch vụ gửi và nhận thư điện tử trên mạng Internet được gọi là gì?",
+    "answers": {
+      "A": "e-health",
+      "B": "e-mail",
+      "C": "e-bank",
+      "D": "e-learning"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Dịch vụ hành chính công là gì?",
+    "answers": {
+      "A": "Dịch vụ liên quan đến hoạt động thực thi pháp luật không nhằm mục tiêu lợi nhuận",
+      "B": "Dịch vụ liên quan đến hoạt động thực thi pháp luật có mục tiêu lợi nhuận",
+      "C": "Dịch vụ liên quan đến hoạt động kinh doanh của tổ chức nhà nước",
+      "D": "Dịch vụ liên quan đến hoạt động giáo dục của tổ chức nhà nước"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Dịch vụ hội thảo trực tuyến từ xa qua mạng Internet được gọi là gì?",
+    "answers": {
+      "A": "SMS",
+      "B": "Video conference",
+      "C": "e-learning",
+      "D": "Telnet"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Dịch vụ lưu trữ dữ liệu trực tuyến trên Internet giúp người dùng làm gì?",
+    "answers": {
+      "A": "Lưu trữ và truy cập dữ liệu thông qua Internet ở bất cứ nơi nào",
+      "B": "Lưu trữ dữ liệu tại máy tính cá nhân của người dùng",
+      "C": "Lưu trữ và truy cập dữ liệu không qua Internet ở bất cứ nơi nào",
+      "D": "Truy cập dữ liệu từ các thiết bị của nhà cung cấp dịch vụ"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Dịch vụ lưu trữ trực tuyến của Microsoft có tên gọi là gì?",
+    "answers": {
+      "A": "Amazon Drive",
+      "B": "FShare",
+      "C": "Dropbox",
+      "D": "OneDrive"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Dịch vụ nào dưới đây không phải là dịch vụ Internet?",
+    "answers": {
+      "A": "Tán gẫu (chat)",
+      "B": "Nhắn tin nhanh(IM)",
+      "C": "Chuyển phát nhanh (EMS)",
+      "D": "Hội thảo video từ xa (video conferencing)"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Dịch vụ nào dưới đây không phải là dịch vụ lưu trữ trực tuyến?",
+    "answers": {
+      "A": "Dropbox",
+      "B": "OneDrive",
+      "C": "YouTube",
+      "D": "Google Drive"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Dịch vụ nào dưới đây là dịch vụ công trực tuyến?",
+    "answers": {
+      "A": "Trao đổi trực tuyến bằng Skype",
+      "B": "Chuyển khoản ngân hàng qua mạng Internet",
+      "C": "Đăng ký cấp đổi giấy phép lái xe qua mạng Internet",
+      "D": "Đăng ký sử dụng mạng xã hội Facebook"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Dịch vụ nào dưới đây là dịch vụ lưu trữ trực tuyến?",
+    "answers": {
+      "A": "Google+",
+      "B": "Windows app store",
+      "C": "Google Play",
+      "D": "Dropbox"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Dịch vụ Telnet dùng để làm gì?",
+    "answers": {
+      "A": "Truyền nhận tập tin",
+      "B": "Gửi thư điện tử",
+      "C": "Điều khiển máy tính từ xa",
+      "D": "Hội thảo video từ xa"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Dịch vụ trò chuyện và tán gẫu trực tuyến được gọi là gì?",
+    "answers": {
+      "A": "Email",
+      "B": "Chat",
+      "C": "Search engine",
+      "D": "Blog"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Để đồng bộ các tập tin trong máy tính với Google Drive, ta cần phải làm gì?",
+    "answers": {
+      "A": "Mở Google Drive bằng trình duyệt Google chrome",
+      "B": "Chỉ cần mở Google Drive bằng bất kỳ trình duyệt nào",
+      "C": "Cài đặt Google Drive trên máy tính",
+      "D": "Tải Google Drive xuống máy tính"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Để sử dụng bàn phím ảo trong Windows 10, ta cần làm gì?",
+    "answers": {
+      "A": "Không có sẵn trong Windows 10, cần phải cài đặt thêm chương trình bàn phím ảo",
+      "B": "Cần phải dùng máy tính bảng mới gọi được bàn phím ảo",
+      "C": "Có sẵn trong Windows 10, chỉ cần gọi lên để sử dụng",
+      "D": "Cần phải dùng màn hình cảm ứng mới gọi được bàn phím ảo"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Để tìm hình ảnh dựa vào một hình cho trước, ta dùng công cụ tìm kiếm nào?",
+    "answers": {
+      "A": "Yahoo",
+      "B": "Ask",
+      "C": "Google",
+      "D": "MSN"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Đĩa CD có dung luợng lưu trữ khoảng bao nhiêu?",
+    "answers": {
+      "A": "700 TB",
+      "B": "700 GB",
+      "C": "700 KB",
+      "D": "700 MB"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Địa chỉ email nào sau đây là không hợp lệ?",
+    "answers": {
+      "A": "vanphong:thsp@gmail.com",
+      "B": "vanphong_thsp@hcmue.edu.vn",
+      "C": "vanphong@thsp.hcmue.edu.vn",
+      "D": "vanphong.thsp@hcmue.edu.vn"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Địa chỉ Gmail nào là hợp lệ?",
+    "answers": {
+      "A": "trung tam tin hoc@gmail.com",
+      "B": "trungtamtinhoc@gmail.com",
+      "C": "trungtam@tinhoc@gmail.com",
+      "D": "trungtam-tinhoc@gmail.com"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Địa chỉ website nào sau đây là sai cú pháp?",
+    "answers": {
+      "A": "http://hcmue.edu.vn",
+      "B": "http://thsp.edu.vn",
+      "C": "http://tuoitrevn",
+      "D": "http://thsp.hcmue.edu.vn"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Định dạng MP4 là định dạng của loại tập tin nào?",
+    "answers": {
+      "A": "Âm thanh",
+      "B": "Vǎn bản",
+      "C": "Hình ảnh",
+      "D": "Phim ảnh"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Định dạng nào sau đây là định dạng âm thanh?",
+    "answers": {
+      "A": "SWF",
+      "B": "WAV",
+      "C": "JPG",
+      "D": "AVI"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Định dạng nào sau đây là định dạng phim ảnh?",
+    "answers": {
+      "A": "WAV",
+      "B": "AVI",
+      "C": "JPG",
+      "D": "SWF"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Đơn vị đo lường xung nhịp của CPU là gì?",
+    "answers": {
+      "A": "Hertz",
+      "B": "Gigabyte",
+      "C": "Bit",
+      "D": "Byte"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "EULA là giấy phép được cấp cho loại phần mềm nào?",
+    "answers": {
+      "A": "Phần mềm lập trình",
+      "B": "Phần mềm nguồn mở",
+      "C": "Phần mềm ứng dụng",
+      "D": "Phần mềm thương mại"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "EULA là viết tắt của thuật ngữ gì?",
+    "answers": {
+      "A": "End User License Agreement",
+      "B": "Ended User License Agreement",
+      "C": "Ending User License Agreement",
+      "D": "Embed User License Agreement"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Font Times New Roman là gì?",
+    "answers": {
+      "A": "Font chữ không có sẵn trong hệ điều hành Windows 10",
+      "B": "Font VNI Windows",
+      "C": "Font chữ VNI",
+      "D": "Font Unicode"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Font VNI-Times là gì?",
+    "answers": {
+      "A": "Font chữ thuộc bảng mã VNI Windows",
+      "B": "Font Unicode",
+      "C": "Font chữ có sẵn trong hệ điều hành Windows 10",
+      "D": "Font chữ chuẩn quốc gia"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Giấy phép phần mềm tự do (GPL) là viết tắt của thuật ngữ gì?",
+    "answers": {
+      "A": "General Published License",
+      "B": "General Publishing License",
+      "C": "General Publish License",
+      "D": "General Public License"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "GNU GPL là giấy phép được cấp cho loại phần mềm nào?",
+    "answers": {
+      "A": "Phần mềm tự do",
+      "B": "Phần mềm ứng dụng",
+      "C": "Phần mềm lập trình",
+      "D": "Phần mềm đồ họa"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Google Docs là ứng dụng trực tuyến dùng để làm gì trên Internet?",
+    "answers": {
+      "A": "Tạo vǎn bản",
+      "B": "Tạo bảng tính",
+      "C": "Tạo trang web",
+      "D": "Tạo bài trình chiếu"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Google là công ty cung cấp dịch vụ gì?",
+    "answers": {
+      "A": "Công ty cung cấp nhiều dịch vụ trên Internet",
+      "B": "Công ty sản xuất điện thoại dùng hệ điều hành Android",
+      "C": "Công ty cung cấp dịch vụ thư điện tử (email)",
+      "D": "Công ty cung cấp dịch vụ tìm kiếm thông tin trên Internet"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Google Mail thuộc loại dịch vụ nào trên Internet?",
+    "answers": {
+      "A": "Không có dịch vụ này",
+      "B": "Mạng xã hội",
+      "C": "Thư điện tử",
+      "D": "Lưu trữ trực tuyến"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Google Sites là ứng dụng dùng để làm gì trên Internet?",
+    "answers": {
+      "A": "Tạo văn bản",
+      "B": "Tạo bài trình chiếu",
+      "C": "Tạo trang web",
+      "D": "Tạo bảng tính"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Google Slides là ứng dụng trực tuyến dùng để làm gì trên Internet?",
+    "answers": {
+      "A": "Tạo trang web",
+      "B": "Tạo bảng tính",
+      "C": "Tạo bài trình chiếu",
+      "D": "Tạo văn bản"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Hệ điều hành nào sau đây là hệ điều hành mã nguồn mở?",
+    "answers": {
+      "A": "Windows XP",
+      "B": "Ubuntu",
+      "C": "Windows 7",
+      "D": "MS-DOS"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Hiện nay kiểu gõ tiếng Việt VNI và Telex là các kiểu gõ như thế nào?",
+    "answers": {
+      "A": "Chỉ có Telex là thông dụng",
+      "B": "Các kiểu gõ thông dụng hiện nay",
+      "C": "Không thông dụng, chỉ có TCVN3 là thông dụng",
+      "D": "Chỉ có VNI là thông dụng"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "HTML là viết tắt của thuật ngữ gì?",
+    "answers": {
+      "A": "Help Management Links",
+      "B": "Hyper text Management Logic",
+      "C": "Hypertext Markup Language",
+      "D": "Hypertext Markup Links"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "IM là viết tắt của thuật ngữ nào sau đây?",
+    "answers": {
+      "A": "Internet Message",
+      "B": "Interested Message",
+      "C": "International Message",
+      "D": "Instant Message"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Keylogger là phần mềm gì?",
+    "answers": {
+      "A": "Là phần mềm gây khó chịu cho người dùng bằng các chương trình quảng cáo",
+      "B": "Là phần mềm thu thập trái phép thông tin trong máy tính",
+      "C": "Là phần mềm thu thập trái phép thông tin được gõ trên bàn phím",
+      "D": "Là phần mềm mở cổng hậu để xâm nhập và gây hại máy tính"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Khi duyệt web, hộp thoại nhỏ chứa nội dung quảng cáo tự động xuất hiện thì gọi là gì?",
+    "answers": {
+      "A": "Cookie",
+      "B": "History",
+      "C": "Pop-up",
+      "D": "Bookmark"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Khi gửi thư điện từ bằng Gmail, bạn không thể đính kèm loại tập tin nào sau đây?",
+    "answers": {
+      "A": "Tập tin bảng tính",
+      "B": "Tập tin thực thi",
+      "C": "Tập tin văn bản",
+      "D": "Tập tin âm thanh"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Khi gửi thư điện tử bằng Gmail, đối tượng nào sau đây không thể đính kèm?",
+    "answers": {
+      "A": "Một thư mục",
+      "B": "Một tập tin nén",
+      "C": "Môt tập tin hình ảnh",
+      "D": "Một tập tin văn bản"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Khi lưu một trang web thành một tập tin trên máy tính, định dạng mặc định của tập tin đó thường là gì?",
+    "answers": {
+      "A": "HTML",
+      "B": "XLSX",
+      "C": "ASP",
+      "D": "PHP"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Khi soạn thảo văn bản hành chính theo thông tư 01/2011/TT-BNV, nội dung giấy giới thiệu được trình bày trên khổ giấy nào?",
+    "answers": {
+      "A": "Khổ giấy A5",
+      "B": "Khổ giấy A3",
+      "C": "Khổ giấy A4",
+      "D": "Khổ giấy A2"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Khi tạo mật khẩu cho email, bạn không được phép dùng ký tự nào?",
+    "answers": {
+      "A": "Ký số",
+      "B": "Ký tự đặc biệt",
+      "C": "Tất cả ký tự đều được phép dùng",
+      "D": "Ký tự in hoa"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Khi xảy ra sự cố cháy do chập điện, nên dùng cách gì để dập lửa?",
+    "answers": {
+      "A": "Bình chữa cháy CO2",
+      "B": "Không cần bình chữa cháy, chỉ cần dùng cát",
+      "C": "Không cần bình chữa cháy, chỉ cần dùng nước",
+      "D": "Bình chữa cháy bọt"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Khối tính toán ALU là viết tắt của thuật ngữ gì?",
+    "answers": {
+      "A": "Arithmetic Local Unit",
+      "B": "Area Local Unit",
+      "C": "Arithmetic Logic Unit",
+      "D": "Area Logic Unit"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Khối tính toán trong CPU có tên gọi là gì?",
+    "answers": {
+      "A": "Registers",
+      "B": "ALU",
+      "C": "CU",
+      "D": "Cache"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Kỹ thuật nén không mất dữ liệu (lossless compression) thường áp dụng cho đối tượng nào?",
+    "answers": {
+      "A": "Tập tin hình ảnh",
+      "B": "Tập tin âm thanh",
+      "C": "Tập tin văn bản",
+      "D": "Tập tin video"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Kỹ thuật nén mất dữ liệu (lossy compression) thường được áp dụng cho loại đối tượng nào?",
+    "answers": {
+      "A": "Tập tin văn bản",
+      "B": "Tập tin hình ảnh",
+      "C": "Tập tin bảng tính",
+      "D": "Tập tin thực thi"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Lịch sử duyệt web (history) chứa thông tin gì?",
+    "answers": {
+      "A": "Thông tin tài khoản người dùng và mật khẩu khi duyệt web",
+      "B": "Địa chỉ các trang web đã từng duyệt qua",
+      "C": "Các trang web yêu thích",
+      "D": "Thông tin dữ liệu tạm khi duyệt web"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Lịch sử duyệt web (history) là gì?",
+    "answers": {
+      "A": "Là nơi lưu lại các cookie",
+      "B": "Là nơi lưu lại địa chỉ các trang web yêu thích mà người dùng đã đánh dấu",
+      "C": "Là nơi lưu lại bộ nhớ đệm (cache) của trình duyêt.",
+      "D": "Là nơi lưu lại địa chỉ các trang web mà người dùng đã từng duyệt qua"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Lĩnh vực kinh doanh trực tuyến trên mạng Internet thường được gọi là gì?",
+    "answers": {
+      "A": "e-learning",
+      "B": "e-health",
+      "C": "e-government",
+      "D": "e-commerce"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Loa (speaker) thuộc nhóm thiết bị nào?",
+    "answers": {
+      "A": "Thiết bị xuất",
+      "B": "Thiết bị xử lý",
+      "C": "Thiết bị điều khiển",
+      "D": "Thiết bị nhập"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Màn hình kết nối với máy tính bằng cổng kết nối nào?",
+    "answers": {
+      "A": "PS/2",
+      "B": "VGA",
+      "C": "COM",
+      "D": "USB"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Mạng Internet là gì?",
+    "answers": {
+      "A": "Là mạng thông tin liên kết các mạng máy tính nội bộ",
+      "B": "Là mạng thông tin toàn cầu do công ty Microsoft sở hữu",
+      "C": "Là mạng thông tin kết nối các đơn vị tổ chức nhà nước",
+      "D": "Là mạng thông tin toàn cầu sử dụng giao thức truyền thông TCP/IP"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Máy chiếu (projector) kết nối với máy tính bằng loại cổng nào?",
+    "answers": {
+      "A": "USB",
+      "B": "VGA",
+      "C": "PS/2",
+      "D": "COM"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Máy in (printer) thuộc nhóm thiết bị nào?",
+    "answers": {
+      "A": "Thiết bị xuất",
+      "B": "Thiết bị xử lý",
+      "C": "Thiết bị lưu trữ",
+      "D": "Thiết bị nhập"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Máy in được dùng phổ biến đối với người dùng cá nhân là loại nào?",
+    "answers": {
+      "A": "Máy in nhiệt",
+      "B": "Máy in laser",
+      "C": "Máy in kim",
+      "D": "Máy in phun"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Máy quét (scanner) thuộc nhóm thiết bị nào?",
+    "answers": {
+      "A": "Thiết bị nhập",
+      "B": "Thiết bị lưu trữ",
+      "C": "Thiết bị xuất",
+      "D": "Thiết bị điều khiển"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Mật khẩu mạnh là mật khẩu nên có chiều dài từ 8 ký tự trở lên và bao gồm?",
+    "answers": {
+      "A": "Ký tự chữ in và số",
+      "B": "Ký tự chữ thường và chữ in",
+      "C": "Ký tự chữ thường và số",
+      "D": "Ký tự chữ thường, chữ in, số và các ký tự đặc biệt"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Mật khẩu nào sau đây được xem là có độ phức tạp cao nhất?",
+    "answers": {
+      "A": "Ac2@1b34",
+      "B": "ABC@2345",
+      "C": "Abc@3456",
+      "D": "abc@1234"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Một bit có khả năng biểu diễn bao nhiêu trạng thái?",
+    "answers": {
+      "A": "3",
+      "B": "2",
+      "C": "4",
+      "D": "1"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Một byte bằng bao nhiêu bit?",
+    "answers": {
+      "A": "32",
+      "B": "64",
+      "C": "16",
+      "D": "8"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Muốn gửi tin nhắn, trao đổi trực tuyến qua hình ảnh hay chia sẻ màn hình làm việc, ta dùng ứng dụng nào của Google?",
+    "answers": {
+      "A": "Google Photos",
+      "B": "Google Plus",
+      "C": "Google Hangout",
+      "D": "Google Drive"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Nguyên tắc hoạt động của virus máy tính thường là gì?",
+    "answers": {
+      "A": "Lây nhiễm vào các tập tin trên đĩa cứng",
+      "B": "Lây nhiễm vào boot record",
+      "C": "Lây nhiễm và phá hủy CMOS",
+      "D": "Tự nhân bản và lây nhiễm"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "OneDrive là loại dịch vụ gì trên Internet?",
+    "answers": {
+      "A": "Tìm và chia sẻ hình ảnh",
+      "B": "Thư điện tử",
+      "C": "Tìm và chia sẻ phim",
+      "D": "Lưu trữ trực tuyến"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Phát biểu nào sau đây là đúng?",
+    "answers": {
+      "A": "Hệ điều hành Windows 10 là phần mềm mã nguồn mở",
+      "B": "Hệ điều hành Windows 10 là phần mềm ứng dụng",
+      "C": "Hệ điều hành Windows 10 là phần mềm miễn phí",
+      "D": "Hệ điều hành Windows 10 là phần mềm hệ thống"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Phần mềm độc hại có tên tiếng Anh là?",
+    "answers": {
+      "A": "Malware",
+      "B": "Hardware",
+      "C": "Software",
+      "D": "Freeware"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Phần mềm nào sau đây là phần mềm độc hại?",
+    "answers": {
+      "A": "Virus,Worm",
+      "B": "MS Word,MS Excel",
+      "C": "Paint,BKAV",
+      "D": "Gadgets,Windows Media Player"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Phép tính nào sau đây là đúng?",
+    "answers": {
+      "A": "1TB=1000MB",
+      "B": "1TB=1024B",
+      "C": "1TB=1000KB",
+      "D": "1TB=1024GB"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Phép tính quy đổi nào sau đây là đúng?",
+    "answers": {
+      "A": "1 GB=1000*1024 KB",
+      "B": "1 GB=1000*1024 MB",
+      "C": "1 GB=1024*1024 KB",
+      "D": "1 GB=1024*1024 MB"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Phương tiện truyền thông (Media) là gì?",
+    "answers": {
+      "A": "Là phương tiện dùng để chuyển tải thông tin, thông điệp lên mạng nội bộ",
+      "B": "Là phương tiện dùng để chuyển tải thông tin, thông điệp lên mạng Internet",
+      "C": "Là phương tiện dùng để diễn tả và chuyển tải những thông tin, thông điệp từ người này đến người khác hay từ nơi này sang nơi khác.",
+      "D": "Là phương tiện dùng để chuyển tải thông tin, thông điệp lên mạng xã hội"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "RAM là gì?",
+    "answers": {
+      "A": "Bộ nhớ vĩnh viễn",
+      "B": "Bộ nhớ ngoài",
+      "C": "Bộ nhớ tạm thời",
+      "D": "Bộ nhớ trong"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Sau khi dùng kỹ thuật nén không mất dữ liệu (lossless compression) trên máy tính, thì dữ liệu sau khi giải nén sẽ như thế nào?",
+    "answers": {
+      "A": "Là dữ liệu ban đầu trước khi nén",
+      "B": "Không còn là dữ liệu ban đầu.",
+      "C": "Là dữ liệu ban đầu và có thời gian tạo lập là thời gian lúc bắt đầu nén dữ liệu",
+      "D": "Là dữ liệu ban đầu và có thời gian tạo lập là thời gian hiện hành"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Sau khi dùng kỹ thuật nén mất dữ liệu (lossy compression) trên máy tính, thì dữ liệu sau khi giải nén sẽ như thế nào?",
+    "answers": {
+      "A": "Vẫn giống dữ liệu ban đầu",
+      "B": "Là dữ liệu ban đầu và có thời gian tạo lập là thời gian lúc bắt đầu nén dữ liệu",
+      "C": "Không còn là dữ liệu ban đầu",
+      "D": "Là dữ liệu ban đầu nhưng có thời gian tạo lập là thời gian hiện hành"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Sau khi khởi động máy tính sử dụng Windows 10, để đăng nhập máy tính bạn cần phải làm gì?",
+    "answers": {
+      "A": "Luôn phải nhập user name và password",
+      "B": "Không cần làm gì cả",
+      "C": "Nhập user name và password nếu được yêu cầu",
+      "D": "Chỉ cần bấm phím ESC để đăng nhập"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Spyware là phần mềm gì?",
+    "answers": {
+      "A": "Là phần mềm mở cổng hậu để xâm nhập và gây hại máy tính",
+      "B": "Là phần mềm gây khó chịu cho người dùng bằng các chương trình quảng cáo",
+      "C": "Là phần mềm thu thập trái phép thông tin trong máy tính",
+      "D": "Là phần mềm thu thập trái phép thông tin được gõ trên bàn phím"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Tập tin (file) là gì?",
+    "answers": {
+      "A": "Là hình thức lưu trữ thông tin trên đĩa của hệ điều hành Windows",
+      "B": "Là các chương trình ứng dụng được cài đặt trên máy tính",
+      "C": "Là các biểu tượng (icon) tương ứng với chương trình ứng dụng",
+      "D": "Là nơi lưu giữ các thư mục theo một chủ đề tùy ý"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Tập tin có phần mở rộng là DOCX, thuộc loại chương trình nào sau đây?",
+    "answers": {
+      "A": "Xử lý vǎn bản",
+      "B": "Xử lý trình chiếu",
+      "C": "Xử lý bảng tính",
+      "D": "Chương trình thực thi"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Tập tin có phần mở rộng là PPTX thuộc loại chương trình nào sau đây?",
+    "answers": {
+      "A": "Chương trình thực thi",
+      "B": "Xử lý vǎn bản",
+      "C": "Xử lý trình chiếu",
+      "D": "Xử lý bảng tính"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Tên miền của tổ chức giáo dục thường chứa thành phần gì?",
+    "answers": {
+      "A": "ORG",
+      "B": "EDU",
+      "C": "COM",
+      "D": "GOV"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Tên miền của tổ chức phi lợi nhuận thường chứa thành phần gì?",
+    "answers": {
+      "A": "EDU",
+      "B": "ORG",
+      "C": "COM",
+      "D": "GOV"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Tên miền của tổ chức thiết lập và cung cấp các dịch vụ mạng thường chứa thành phần gì?",
+    "answers": {
+      "A": "MIL",
+      "B": "ORG",
+      "C": "NET",
+      "D": "COM"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Tên miền của tổ chức thương mại thường chứa thành phần gì?",
+    "answers": {
+      "A": "ORG",
+      "B": "GOV",
+      "C": "EDU",
+      "D": "COM"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Tên miền www.cam.ac.uk là website do nước nào quản lý?",
+    "answers": {
+      "A": "Hoa Kỳ",
+      "B": "Vương Quốc Anh",
+      "C": "Hồng Kông",
+      "D": "Cộng hòa Liên bang Đức"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Thành phần nào là bộ xử lý trung tâm của máy tính?",
+    "answers": {
+      "A": "ROM",
+      "B": "CPU",
+      "C": "Mainboard",
+      "D": "RAM"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Thanh Taskbar của Windows 10 không chứa các đối tượng nào dưới đây?",
+    "answers": {
+      "A": "Các ứng dụng thường trú, ngày giờ",
+      "B": "Recycle Bin",
+      "C": "Nút Start",
+      "D": "Các ứng dụng đang mở"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Thuật ngữ email là viết tắt của cụm từ nào sau đây?",
+    "answers": {
+      "A": "Exchange Mail",
+      "B": "Extra Mail",
+      "C": "Electronic Mail",
+      "D": "Enrich Mail"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Thuật ngữ LAN dùng để chỉ loại mạng máy tính nào?",
+    "answers": {
+      "A": "Mạng Internet tốc độ cao",
+      "B": "Mạng diện rộng",
+      "C": "Mạng toàn cầu",
+      "D": "Mạng cục bộ"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Thuật ngữ nào chỉ hành động tải dữ liệu từ Internet về máy tính của bạn?",
+    "answers": {
+      "A": "Save As",
+      "B": "Download",
+      "C": "Close",
+      "D": "Upload"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Thuật ngữ tiếng Anh nào sau đây dùng để chỉ phần mềm mã nguồn mở?",
+    "answers": {
+      "A": "Freeware",
+      "B": "Free software",
+      "C": "Commercial software",
+      "D": "Open source software"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Thuật ngữ WAN dùng để chỉ loại mạng máy tính nào?",
+    "answers": {
+      "A": "Mạng diện rộng",
+      "B": "Mạng cục bộ",
+      "C": "Mạng toàn cầu",
+      "D": "Mạng Internet tốc độ cao"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Thư điện tử (email) có những ưu điểm nào?",
+    "answers": {
+      "A": "Có thể gửi cho nhiều người cùng lúc, tiết kiệm thời gian và chi phí",
+      "B": "Không bị thất lạc, có thể gửi kèm nhiều loại tài liệu với dung lượng không hạn chế",
+      "C": "Độ bảo mật cao, có thể nhận thư điện tử mà không cần kết nối Internet",
+      "D": "Dung lượng của hòm thư không bị hạn chế"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Touchpad là tên của thiết bị nào?",
+    "answers": {
+      "A": "Bàn phím cảm ứng trên máy tính xách tay",
+      "B": "Bàn vẽ trên máy tính xách tay",
+      "C": "Chuột cảm ứng trên máy tính xách tay",
+      "D": "Màn hình cảm ứng"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Tốc độ truyền dữ liệu tối đa của chuẩn USB 2.0 là gì?",
+    "answers": {
+      "A": "1.5 Mbps",
+      "B": "480 Mbps",
+      "C": "400 Mbps",
+      "D": "12 Mbps"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Trên thanh taskbar của Windows 10, nút lệnh nào cho phép thu nhỏ tất cả các ứng dụng đang mở?",
+    "answers": {
+      "A": "Solve PC issues",
+      "B": "Show hidden icons",
+      "C": "Show desktop",
+      "D": "Start"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Trên thanh taskbar của Windows 10, phần điều khiển âm lượng (speakers) nằm ở vùng nào?",
+    "answers": {
+      "A": "Các ứng dụng đang mở",
+      "B": "Các ứng dụng thường trú, ngày giờ",
+      "C": "Nút Start",
+      "D": "Pin"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Trên thanh taskbar của Windows 10, vùng chứa các biểu tượng ứng dụng thường sử dụng (giúp người dùng mở ứng dụng bằng một thao tác nhấp chuột) được gọi tên là gì?",
+    "answers": {
+      "A": "Show desktop",
+      "B": "Pin",
+      "C": "Start",
+      "D": "Date/Time"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Trình tự hợp lý để soạn thảo một văn bản là gì?",
+    "answers": {
+      "A": "Tạo văn bản mới - Nhập văn bản - Định dạng văn bản - Thiết lập trang in",
+      "B": "Tạo văn bản mới - Thiết lập trang in - Nhập văn bản - Định dạng văn bản",
+      "C": "Thiết lập trang in - Tạo văn bản mới - Nhập văn bản - Định dạng văn bản",
+      "D": "Thiết lập trang in - Nhập văn bản - Tạo văn bản mới - Định dạng văn bản"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Trong các phần mềm sau, phần mềm nào là phần mềm miễn phí?",
+    "answers": {
+      "A": "Phần mềm Unikey",
+      "B": "Phần mềm Microsoft Windows",
+      "C": "Phần mềm Adobe Photoshop CS5",
+      "D": "Phần mềm Microsoft Office"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Trong các từ sau đây, từ nào nói về bản quyền?",
+    "answers": {
+      "A": "License",
+      "B": "Copyright",
+      "C": "Trademark",
+      "D": "Fair use"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Trong công cụ tìm kiếm (search engine) Google, nút lệnh “Công cụ” (Tools) dùng để làm gì?",
+    "answers": {
+      "A": "Tìm với bộ lọc theo ngữ cảnh",
+      "B": "Tìm hình ảnh",
+      "C": "Tìm theo thời gian",
+      "D": "Tìm theo ngôn ngữ"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Trong cửa sổ chương trình ứng dụng của Windows 10, thanh tiêu đề (title bar) thường ở vị trí nào?",
+    "answers": {
+      "A": "Phải",
+      "B": "Dưới",
+      "C": "Trái",
+      "D": "Trên"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Trong cửa sổ chương trình ứng dụng của Windows 10, thanh trạng thái (status bar) thường ở vị trí nào?",
+    "answers": {
+      "A": "Trên",
+      "B": "Phải",
+      "C": "Trái",
+      "D": "Dưới"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Trong địa chỉ URL, đáp án nào dưới đây được gọi là giao thức Protocol Identifier?",
+    "answers": {
+      "A": "https://google.com",
+      "B": "google.com",
+      "C": "http://google.com",
+      "D": "http://"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Trong định dạng trang in Excel 2016, để thiết lập in lặp lại các cột tiêu đề trong trang tính ta dùng lệnh gì?",
+    "answers": {
+      "A": "Print Titles - Columns to repeat at bottom",
+      "B": "Print Titles - Columns to repeat at left",
+      "C": "Print Titles - Columns to repeat at top",
+      "D": "Print Titles - Columns to repeat at right"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Trong giao dịch trực tuyến, hình thức trả tiền khi nhận hàng có tên gọi là gì?",
+    "answers": {
+      "A": "Token",
+      "B": "COD",
+      "C": "FIFO",
+      "D": "OTP"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Trong mạng Internet, thuật ngữ ISP dùng để chỉ đối tượng nào?",
+    "answers": {
+      "A": "Nhà cung cấp các thiết bị mạng",
+      "B": "Nhà cung cấp máy tính",
+      "C": "Nhà cung cấp phần mềm bán hàng qua Internet",
+      "D": "Nhà cung cấp dịch vụ Internet"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Trong mạng Internet, WWW là viết tắt của thuật ngữ gì?",
+    "answers": {
+      "A": "Word Wide Web",
+      "B": "World Wide Web",
+      "C": "Web Wide World",
+      "D": "Work Wide Web"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Trong mạng máy tính, cổng nào thường được dùng để kết nối các máy tính với nhau",
+    "answers": {
+      "A": "RJ45",
+      "B": "HDMI",
+      "C": "PS/2",
+      "D": "VGA"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Trong một trang tính của Excel 2016, giao của một cột và một dòng được gọi là gì?",
+    "answers": {
+      "A": "Sheet",
+      "B": "Row",
+      "C": "Column",
+      "D": "Cell"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Trong MS Excel 2016, A$1 thuộc loại địa chỉ gì?",
+    "answers": {
+      "A": "Hỗn hợp cố định cột",
+      "B": "Tương đối",
+      "C": "Hỗn hợp cố định dòng",
+      "D": "Tuyệt đối"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Trong MS Excel 2016, có công thức tính như sau =IF(AND(A1>=5, B1>=4), Đạt, Hỏng). Khi nhấn Enter, màn hình xuất hiện thông báo lỗi. Vậy công thức nào dưới đây là đúng cú pháp?",
+    "answers": {
+      "A": "=IF(AND(A1>=5,B1>=4, “Đạt”, “Hỏng”))",
+      "B": "=IF(A1>=5 AND B1>=4, Đạt, Hỏng)",
+      "C": "=IF(AND(A1>=5, B1>=4), “Đạt”,“ Hỏng”)",
+      "D": "=IF(A1>=5 AND B1>=4,“ Đạt”,“ Hỏng”)"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Trong MS Excel 2016, công thức =IF(5>10, 100) trả về kết quả là gì?",
+    "answers": {
+      "A": "TRUE",
+      "B": "FALSE",
+      "C": "100",
+      "D": "MS Excel hiện thông báo lỗi"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Trong MS Excel 2016, công thức =INT(18/4) cho kết quả là bao nhiêu?",
+    "answers": {
+      "A": "4",
+      "B": "4.5",
+      "C": "#VALUE!",
+      "D": "#NAME?"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Trong MS Excel 2016, công thức =LEFT(“THSP1234”, 4) sẽ cho kết quả là gì?",
+    "answers": {
+      "A": "1234",
+      "B": "SP12",
+      "C": "THSP",
+      "D": "4321"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Trong MS Excel 2016, công thức =LEN(“AB123”) trả về kết quả là gì?",
+    "answers": {
+      "A": "2",
+      "B": "7",
+      "C": "3",
+      "D": "5"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Trong Ms Excel 2016, công thức =RIGHT(\"THSP1234\",4) sẽ cho kết quả là gì?",
+    "answers": {
+      "A": "4321",
+      "B": "THSP",
+      "C": "SP12",
+      "D": "1234"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Trong MS Excel 2016, công thức tại ô A2 là =SUM(10, -20, 30) cho kết quả là bao nhiêu?",
+    "answers": {
+      "A": "30",
+      "B": "20",
+      "C": "10",
+      "D": "60"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Trong MS Excel 2016, để ẩn cột trên trang tính hiện hành ta thực hiện lệnh nào trong thẻ Home-Format-Hide&Unhide?",
+    "answers": {
+      "A": "Unhide Columns",
+      "B": "Unhide Rows",
+      "C": "Hide Columns",
+      "D": "Hide Rows"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Trong MS Excel 2016, để chèn thêm cột vào trang tính hiện hành ta thực hiện lệnh nào trong thẻ Home-Insert?",
+    "answers": {
+      "A": "InsertSheet",
+      "B": "Insert Sheet Columns",
+      "C": "Insert Sheet Rows",
+      "D": "Insert Cells"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Trong MS Excel 2016, để chọn các khối ô không liền kề trong một trang tính, ta dùng chuột kết hợp với phím nào?",
+    "answers": {
+      "A": "Ctrl",
+      "B": "Ctrl+Shift",
+      "C": "Alt",
+      "D": "Shift"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Trong MS Excel 2016, để chọn toàn bộ vùng dữ liệu chứa ô hiện hành, ta dùng phím tắt gì?",
+    "answers": {
+      "A": "Ctrl+A",
+      "B": "Ctrl+B",
+      "C": "Ctrl+C",
+      "D": "Ctrl+D"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Trong MS Excel 2016, để cố định địa chỉ ô, ta sử dụng phím tắt nào?",
+    "answers": {
+      "A": "F4",
+      "B": "F5",
+      "C": "F3",
+      "D": "F2"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Trong MS Excel 2016, để di chuyển ô hiện hành về địa chỉ ô A1, ta dùng phím tắt nào?",
+    "answers": {
+      "A": "Ctrl+Alt+Home",
+      "B": "Ctrl+Home",
+      "C": "Shift+Home",
+      "D": "Ctrl+Shift+Home"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Trong MS Excel 2016, để đổi một chuỗi số thành giá trị số tương ứng, ta sử dụng hàm có tên là gì?",
+    "answers": {
+      "A": "ROUND",
+      "B": "MOD",
+      "C": "INT",
+      "D": "VALUE"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Trong MS Excel 2016, để hiện dòng bị ẩn trên trang tính hiện hành ta chọn các dòng bao gồm cả dòng bị ẩn, rồi thực hiện lệnh Format-Hide & Unhide-Unhide Rows tại thẻ nào dưới đây?",
+    "answers": {
+      "A": "Formulas",
+      "B": "Insert",
+      "C": "Home",
+      "D": "Page Layout"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Trong MS Excel 2016, để hiển thị đầy đủ chuỗi dữ liệu có độ dài lớn hơn độ rộng ô mà không làm thay đổi độ rộng ô, ta dùng lệnh gì?",
+    "answers": {
+      "A": "Wrap Text",
+      "B": "Merge Cells",
+      "C": "Text Direction",
+      "D": "Orientation"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Trong MS Excel 2016, để làm tròn giá trị số tại ô A1 đến hàng trǎm, tại ô A2 công thức viết như thế nào?",
+    "answers": {
+      "A": "=ROUND(A1,-1)",
+      "B": "=ROUND(A1,-2)",
+      "C": "=ROUND(A1,0)",
+      "D": "=ROUND(A1,2)"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Trong MS Excel 2016, để sửa lại dữ liệu có sẵn trong địa chỉ ô, ta dùng phím tắt nào?",
+    "answers": {
+      "A": "F2",
+      "B": "F4",
+      "C": "F5",
+      "D": "F3"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Trong MS Excel 2016, để thay đổi khổ giấy cho trang in ta chọn thẻ nào?",
+    "answers": {
+      "A": "Page Layout",
+      "B": "Home",
+      "C": "Insert",
+      "D": "View"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Trong MS Excel 2016, để thay đổi vị trí chú thích (Legend) trên vùng biều đồ từ bên phải xuống phía dưới biểu đồ, dùng lệnh nào trong thẻ (Chart Tools) Design-Add Chart Element-Legend?",
+    "answers": {
+      "A": "Bottom",
+      "B": "Top",
+      "C": "Left",
+      "D": "Right"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Trong MS Excel 2016, để thiết lập các dòng tiêu đề lặp lại ở đầu mỗi trang in, ta dùng lệnh gì trong hộp thoại Page Setup -Sheet?",
+    "answers": {
+      "A": "Rows to repeat at left",
+      "B": "Rows to repeat at right",
+      "C": "Rows to repeat at bottom",
+      "D": "Rows to repeat at top"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Trong MS Excel 2016, để thiết lập in các đường lưới ô trong trang tính ta dùng lệnh gì trong hộp thoại Page Setup-Sheet?",
+    "answers": {
+      "A": "Draft quality",
+      "B": "Gridlines",
+      "C": "Row and column headings",
+      "D": "Black and white"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Trong MS Excel 2016, để trộn các ô đang chọn mà không canh biên ô, ta dùng lệnh gì trên thẻ Home?",
+    "answers": {
+      "A": "Merge Across",
+      "B": "Merge Cells",
+      "C": "Unmerge Cells",
+      "D": "Merge &Center"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Trong MS Excel 2016, để xét xếp loại cho học sinh theo bốn tiêu chí: \"Giỏi\", \"Khá\", \"Trung bình”, “Kém” ta cần dùng bao nhiêu hàm IF lồng nhau?",
+    "answers": {
+      "A": "5",
+      "B": "3",
+      "C": "2",
+      "D": "4"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Trong MS Excel 2016, để xóa cột hiện hành, ta nhấp phải trên tiêu đề cột rồi chọn lệnh nào?",
+    "answers": {
+      "A": "Delete Sheet",
+      "B": "Delete",
+      "C": "Delete Cells",
+      "D": "Delete Sheet Columns"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Trong MS Excel 2016, để xóa dữ liệu và các định dạng trong một khối ô đang chọn, ta dùng lệnh gì trong thẻ Home-Clear?",
+    "answers": {
+      "A": "Clear All",
+      "B": "Clear Contents",
+      "C": "Clear Comments",
+      "D": "Clear Formats"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Trong MS Excel 2016, để xóa toàn bộ dữ liệu nhưng vẫn giữ lại các định dạng ta thực hiện như thế nào?",
+    "answers": {
+      "A": "Thẻ Home-Clear-Clear Contents",
+      "B": "Phím tắt Shift+Delete",
+      "C": "Thẻ Home-Clear-Delete",
+      "D": "Phím tắt Alt+Delete"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Trong MS Excel 2016, để xuống dòng trong ô khi nhập dữ liệu ta dùng phím tắt gì?",
+    "answers": {
+      "A": "Alt+Enter",
+      "B": "Shift+Enter",
+      "C": "Ctrl+Enter",
+      "D": "Ctrl+Shift+Enter"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Trong MS Excel 2016, địa chỉ nào dưới đây là địa chỉ hỗn hợp cố định dòng?",
+    "answers": {
+      "A": "B1",
+      "B": "$B$1",
+      "C": "$B1",
+      "D": "B$1"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Trong MS Excel 2016, địa chỉ nào dưới đây là địa chỉ tuyệt đối?",
+    "answers": {
+      "A": "$A1:$B1",
+      "B": "$A$1:$B$1",
+      "C": "A$1:B$1",
+      "D": "$A$1:$B1"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Trong MS Excel 2016, giá trị nào dưới đây là kết quả của định dạng Comma Style trên thẻ Home?",
+    "answers": {
+      "A": "1,234,567.00",
+      "B": "1,234,567",
+      "C": "1234567.00",
+      "D": "1234567"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Trong MS Excel 2016, hàm nào dùng để dò tìm theo chiều dọc và lấy giá trị từ bảng dữ liệu khác về?",
+    "answers": {
+      "A": "COUNTA",
+      "B": "VLOOKUP",
+      "C": "IF",
+      "D": "HLOOKUP"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Trong MS Excel 2016, khi cần so sánh khác nhau giữa hai toán hạng trong một biểu thức ta dùng ký hiệu nào?",
+    "answers": {
+      "A": "≠",
+      "B": "#",
+      "C": "><",
+      "D": "<>"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Trong MS Excel 2016, khi dùng định dạng Percent Style thì giá trị 0.25 sẽ có kết quả là gì?",
+    "answers": {
+      "A": "25%",
+      "B": "0.25%",
+      "C": "25.00%",
+      "D": "2.50%"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Trong MS Excel 2016, khi nhập dữ liệu kiểu ngày tháng, phát biểu nào dưới đây là đúng?",
+    "answers": {
+      "A": "Dữ liệu mặc định canh biên dưới ô",
+      "B": "Dữ liệu mặc định canh biên phải ô",
+      "C": "Dữ liệu mặc định canh biên trên ô",
+      "D": "Dữ liệu mặc định canh biên trái ô"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Trong MS Excel 2016, khi nhập một chuỗi ký tự có chiều dài lớn hơn độ rộng của ô thì mặc định sẽ hiển thị như thế nào?",
+    "answers": {
+      "A": "Chuỗi ký tự hiển thị tràn sang các ô trống kế bên trái",
+      "B": "Chuỗi ký tự hiển thị tràn sang các ô trống kế bên dưới",
+      "C": "Chuỗi ký tự hiển thị tràn sang các ô trống kế bên phải",
+      "D": "Chuỗi ký tự hiển thị tràn sang các ô trống kế bên trên"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Trong MS Excel 2016, khi viết sai tên hàm trong công thức tính toán, Excel trả về giá trị thông báo lỗi là gì?",
+    "answers": {
+      "A": "#NAME?",
+      "B": "#DIV/0!",
+      "C": "#NULL!",
+      "D": "#NUM!"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Trong MS Excel 2016, ký tự nào bắt đầu một công thức tính toán?",
+    "answers": {
+      "A": "?",
+      "B": "$",
+      "C": "!",
+      "D": "="
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Trong MS Excel 2016, làm thế nào để nhập một chuỗi ký tự 0123 vào ô bất kỳ?",
+    "answers": {
+      "A": "'0123",
+      "B": "“0123",
+      "C": "“0123”",
+      "D": "0123"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Trong MS Excel 2016, lệnh nào dưới đây không thuộc nhóm lệnh canh biên văn bản theo chiều ngang trong hộp thoại Format Cells?",
+    "answers": {
+      "A": "Center",
+      "B": "Justify",
+      "C": "Top",
+      "D": "Left(Indent)"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Trong MS Excel 2016, lệnh nào dưới đây thuộc nhóm lệnh canh biên văn bản theo chiều dọc trong hộp thoại Format Cells?",
+    "answers": {
+      "A": "Center",
+      "B": "Left",
+      "C": "Mid",
+      "D": "Right"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Trong MS Excel 2016, lệnh thay đổi hướng giấy Orientation - Portrait/Landscape nằm trong thẻ nào?",
+    "answers": {
+      "A": "Insert",
+      "B": "Page Layout",
+      "C": "Home",
+      "D": "Formulas"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Trong MS Excel 2016, minh họa nào dưới đây là địa chỉ một khối ô?",
+    "answers": {
+      "A": "A10;B10",
+      "B": "A10:B10",
+      "C": "A10.B10",
+      "D": "A10-B10"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Trong MS Excel 2016, minh họa nào dưới đây là địa chỉ ô?",
+    "answers": {
+      "A": "AA11",
+      "B": "1A",
+      "C": "11AA",
+      "D": "1A1"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Trong MS Excel 2016, một công thức tính toán có liên quan đến giá trị ngày tháng là: ngày 15 tháng 6 nǎm 2016. Khi sử dụng hàm DATE để mình họa ngày tháng trên, ta viết như thế nào là đúng?",
+    "answers": {
+      "A": "=DATE(6,15,2016)",
+      "B": "=DATE(2016,15,6)",
+      "C": "=DATE(15,6,2016)",
+      "D": "=DATE(2016,6,15)"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Trong MS Excel 2016, nếu ô A1 có giá trị là Nguyễn Văn, A2 có giá trị là An. Sử dụng công thức như thế nào để có kết quả tại ô A3 là Nguyễn Văn An?",
+    "answers": {
+      "A": "=A1+\"\"+A2",
+      "B": "=A1&A2",
+      "C": "=A1+A2",
+      "D": "=A1&\" \"&A2"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Trong MS Excel 2016, nếu ô A1 có giá trị số là 123,456.789 thì công thức =ROUND(A1,-3) cho kết quả là bao nhiêu?",
+    "answers": {
+      "A": "123,456",
+      "B": "123,000",
+      "C": "123,450",
+      "D": "123,400"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Trong MS Excel 2016, nhập công thức tính sau =IF(AND(A1>=5, B1>=4), Đạt, Hỏng). Khi nhấn Enter, màn hình xuất hiện thông báo lỗi. Vậy công thức nào dưới đây là đúng cú pháp?",
+    "answers": {
+      "A": "=IF(A1>=5 AND B1>=4, \" Đạt \",\" Hỏng \")",
+      "B": "=IF(AND(A1>=5, B1>=4, \"Đạt\", \" Hỏng \"))",
+      "C": "=IF(A1>=5 AND B1>=4, Đạt, Hỏng)",
+      "D": "=IF(AND(A1>=5,B1>=4), \"Ðạt\", \"Hỏng\")"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Trong MS Excel 2016, phát biểu nào dưới đây là đúng?",
+    "answers": {
+      "A": "Một trang in gọi là Worksheet",
+      "B": "Trong một Workbook có thể chứa nhiều Worksheet",
+      "C": "Trong một Worksheet có thể chứa nhiều Workbook",
+      "D": "Một trang tính gọi là Workbook"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Trong MS Excel 2016, phát biểu nào dưới đây là sai?",
+    "answers": {
+      "A": "Hàm SUM(A1:A10) dùng để tính tổng các giá trị số trong khối ô A1:A10",
+      "B": "Hàm COUNT(A1:A10) dùng để đếm các giá trị số trong khối ô A1:A10",
+      "C": "Hàm COUNTA(A1:A10) dùng để đếm các giá trị khác rỗng trong khối ô A1:A10",
+      "D": "Hàm COUNTBLANK(A1:A10) dùng để đếm các giá trị logic trong khối ô A1:A10"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Trong MS Excel 2016, phát biểu nào dưới đây về hàm AND là đúng?",
+    "answers": {
+      "A": "Hàm AND trả về giá trị TRUE khi nhiều đối số có kết quả là TRUE",
+      "B": "Hàm AND trả về giá trị TRUE khi tất cả các đối số có kết quả là TRUE",
+      "C": "Hàm AND trả về giá trị TRUE khi duy nhất một đối số có kết quả là FALSE",
+      "D": "Hàm AND trả về giá trị TRUE khi ít nhất một đối số có kết quả là FALSE"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Trong MS Excel 2016, phát biểu nào dưới đây về hàm OR là đúng?",
+    "answers": {
+      "A": "Hàm OR trả về giá trị TRUE khi tất cả đối số có kết quả là FALSE",
+      "B": "Hàm OR trả về giá trị TRUE khi ít nhất một đối số có kết quả là TRUE",
+      "C": "Hàm OR trả về giá trị FALSE khi tất cả đối số có kết quả là TRUE",
+      "D": "Hàm OR trả về giá trị FALSE khi ít nhất một đối số có kết quả là TRUE"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Trong MS Excel 2016, tại địa chỉ ô A1 của trang tính hiện hành có một chuỗi giá trị là “TK2014-01”. Tại địa chỉ ô B1, sử dụng công thức =VALUE(RIGHT(A1, 7)) thì kết quả sẽ là gì?",
+    "answers": {
+      "A": "#####",
+      "B": "#VALUE!",
+      "C": "#N/A",
+      "D": "#NAME!"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Trong MS Excel 2016, tại khối ô A1:A10 có một danh sách giá trị số thứ tự từ 1 đến 10. Công thức =COUNT(A1:A10) cho kết quả là bao nhiêu?",
+    "answers": {
+      "A": "100",
+      "B": "10",
+      "C": "55",
+      "D": "1"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Trong MS Excel 2016, tại ô A1 chứa giá trị 10, A2 rỗng, A3 chứa giá trị 2. Công thức =AVERAGE(A1:A3) cho kết quả là bao nhiêu?",
+    "answers": {
+      "A": "6",
+      "B": "3",
+      "C": "4",
+      "D": "2"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Trong MS Excel 2016, tại ô A1 chứa giá trị ngày tháng là 10-Feb-17. Hàm MONTH(A1) sẽ cho kết quả là bao nhiêu?",
+    "answers": {
+      "A": "2",
+      "B": "10",
+      "C": "17",
+      "D": "Feb"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Trong MS Excel 2016, tại ô A1 có chuỗi “TK1234-01\". Muốn có kết quả là giá trị chuỗi “1234” thì viết công thức như thế nào?",
+    "answers": {
+      "A": "=MID(A1,4,3)",
+      "B": "=RIGHT(A1,4)",
+      "C": "=LEFT(A1,4)",
+      "D": "=MID(A1,3,4)"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Trong MS Excel 2016, tại ô A1 có chuỗi “TK1234-01\". Muốn có kết quả là giá trị số 1234 thì viết công thức như thế nào?",
+    "answers": {
+      "A": "=VALUE(MID(A1,4,3))",
+      "B": "=MID(A1,3,4)",
+      "C": "=MID(A1,4,3)",
+      "D": "=VALUE(MID(A1,3,4))"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Trong MS Excel 2016, tại ô A1 có chuỗi giá trị là “TK1234-01\". Công thức =VALUE(RIGHT(A1,2)) sẽ cho kết quả là gì?",
+    "answers": {
+      "A": "01",
+      "B": "TK",
+      "C": "0",
+      "D": "1"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Trong MS Excel 2016, tại ô A1 có giá trị kiểu ngày là 15/06/2012. Hàm DAY(A1) sẽ cho kết quả là bao nhiêu?",
+    "answers": {
+      "A": "6",
+      "B": "06",
+      "C": "2012",
+      "D": "15"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Trong MS Excel 2016, tại ô A1 có giá trị kiểu ngày là 15/06/2012. Hàm YEAR(A1) sẽ cho kết quả là bao nhiêu?",
+    "answers": {
+      "A": "2012",
+      "B": "12",
+      "C": "06",
+      "D": "15"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Trong MS Excel 2016, tại ô A1 có giá trị là 10, A2 có giá trị là 3. Hàm MOD(A1,A2) cho kết quả là bao nhiêu?",
+    "answers": {
+      "A": "1",
+      "B": "0",
+      "C": "3",
+      "D": "10"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Trong MS Excel 2016, tại ô A1 có giá trị số là 1.99. Công thức =INT(A1) cho kết quà là bao nhiêu?",
+    "answers": {
+      "A": "2",
+      "B": "1.9",
+      "C": "1",
+      "D": "0"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Trong MS Excel 2016, tại ô B2 có giá trị là “B”, C2 có giá trị là 7. Công thức =IF(B2=\"A”, 100, IF(C2>=7, 200, 300)) sẽ cho kết quả là bao nhiêu?",
+    "answers": {
+      "A": "100",
+      "B": "200",
+      "C": "#VALUE!",
+      "D": "300"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Trong MS Excel 2016, tại ô B2 có giá trị là “B”, C2 có giá trị là 7. Công thức =IF(B2=\"A”, 100, IF(C2>=7, 200, 300)) sẽ cho kết quả là bao nhiêu?",
+    "answers": {
+      "A": "100",
+      "B": "200",
+      "C": "#VALUE!",
+      "D": "300"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Trong MS Excel 2016, tại ô C1 có công thức =$A1*B$1. Sao chép công thức đến ô C2, ta có công thức mới là gì?",
+    "answers": {
+      "A": "=$C2*D$1",
+      "B": "=$A2*C$2",
+      "C": "=$A2*B$1",
+      "D": "=$B1*C$1"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Trong MS Excel 2016, tại ô C1 có công thức =$A1*B$1. Sao chép công thức đến ô D1, ta có công thức mới là gì?",
+    "answers": {
+      "A": "=$B1*C$1",
+      "B": "=$A1*B$1",
+      "C": "=$A1*C$1",
+      "D": "=$A2*B$2"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Trong MS Excel 2016, tại ô C1 có công thức =A1*B1+10. Nếu sao chép công thức đến ô C5 ta sẽ có công thức là gì?",
+    "answers": {
+      "A": "=C1*D1+10",
+      "B": "=A1*B1+10",
+      "C": "=A5*B5+10",
+      "D": "=A5*B5+15"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Trong MS Excel 2016, thẻ Border trong hộp thoại Format Cells có chức nǎng gì?",
+    "answers": {
+      "A": "Kẻ đường viền khung",
+      "B": "Canh lề dữ liệu",
+      "C": "Tô màu dữ liệu",
+      "D": "Tô màu nền cho ô"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Trong MS Excel 2016, thẻ nào trong hộp thoại Format Cells có chức nǎng định dạng gạch chân (Underline) dữ liệu?",
+    "answers": {
+      "A": "Fill",
+      "B": "Font",
+      "C": "Alignment",
+      "D": "Border"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Trong MS Excel 2016, với công thức có sử dụng địa chỉ ô tương đối, phát biểu nào dưới đây là đúng khi chép công thức theo chiều ngang?",
+    "answers": {
+      "A": "Cột trong địa chỉ ô sẽ bị đổi",
+      "B": "Cột và dòng trong địa chỉ ô sẽ bị đổi",
+      "C": "Dòng trong địa chỉ ô sẽ bị đổi",
+      "D": "Cột và dòng trong địa chỉ ô sẽ không đổi"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Trong MS Excel 2016, với công thức có sử dụng địa chỉ ô tương đối, phát biểu nào dưới đây là đúng khi sao chép công thức theo chiều dọc?",
+    "answers": {
+      "A": "Dòng trong địa chỉ ô sẽ bị đổi",
+      "B": "Cột, dòng trong địa chỉ ô sẽ bị đổi",
+      "C": "Cột trong địa chỉ ô sẽ bị đổi",
+      "D": "Cột, dòng trong địa chỉ ô sẽ không bị đổi"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Trong MS PowerPoint 2016, chế độ hiển thị nào dưới đây cho phép thực hiện sắp xếp các trang chiếu?",
+    "answers": {
+      "A": "Notes Page",
+      "B": "Normal View",
+      "C": "Reading view",
+      "D": "Slide Sorter"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Trong MS PowerPoint 2016, chế độ Notes Page dùng để làm gì?",
+    "answers": {
+      "A": "Hiển thị các trang chiếu dưới dạng thu nhỏ, giúp dễ dàng sắp xếp lại các trang chiếu",
+      "B": "Nhập nội dung chú thích cho trang chiếu",
+      "C": "Thiết kế nội dung trang chiếu",
+      "D": "Xem trước việc trình diễn của các hiệu ứng, các đoạn phim và âm thanh"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Trong MS PowerPoint 2016, chế độ Slide Sorter dùng để làm gì?",
+    "answers": {
+      "A": "Xem trước việc trình diễn của các hiệu ứng, các đoạn phim và âm thanh",
+      "B": "Hiển thị các trang chiếu dưới dạng thu nhỏ, giúp dễ dàng sắp xếp lại các trang chiếu",
+      "C": "Thiết kế nội dung trang chiếu",
+      "D": "Nhập nội dung chú thích cho trang chiếu"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Trong MS PowerPoint 2016, để chèn thêm trang chiếu mới, ta dùng phím gì?",
+    "answers": {
+      "A": "Alt+M",
+      "B": "Alt+N",
+      "C": "Ctrl+M",
+      "D": "Ctrl+N"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Trong MS PowerPoint 2016, để chọn thêm hiệu ứng hoạt hình cho đối tượng trên trang chiếu, ta dùng lệnh gì trong thẻ Animations?",
+    "answers": {
+      "A": "Trigger",
+      "B": "Animation Painter",
+      "C": "Animation Pane",
+      "D": "Add Animation"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Trong MS PowerPoint 2016, để chuyển bài trình chiếu thành tập tin văn bản MS Word, ta dùng lệnh gì trong thẻ File-Export?",
+    "answers": {
+      "A": "Change File Type",
+      "B": "Create Handouts",
+      "C": "Package Presentation for CD",
+      "D": "Create PDF/XPS Document"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Trong MS PowerPoint 2016, để chuyển đến trang chiếu cuối trong khi trình chiếu, ta dùng phím tắt gì?",
+    "answers": {
+      "A": "Page Up",
+      "B": "Home",
+      "C": "Page Down",
+      "D": "End"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Trong MS PowerPoint 2016, để chuyển đến trang chiếu đầu tiên trong khi trình chiếu, ta dùng phím tắt gì?",
+    "answers": {
+      "A": "Page Down",
+      "B": "Home",
+      "C": "Page Up",
+      "D": "End"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Trong MS PowerPoint 2016, để chuyển sang cửa sổ bài trình chiếu đã mở khác, ta dùng lệnh gì trong thẻ View?",
+    "answers": {
+      "A": "Switch Windows",
+      "B": "Fit to Windows",
+      "C": "Move Split",
+      "D": "New Windows"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Trong MS PowerPoint 2016, để có hai trang chiếu giống nhau về nội dung và thiết kế, ta dùng lệnh gì trong thẻ Home-New Slide?",
+    "answers": {
+      "A": "Duplicate Selected Slides",
+      "B": "Reuse Slides...",
+      "C": "Slides from Outline...",
+      "D": "Two Content"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Trong MS PowerPoint 2016, để định dạng đường viền của hình vẽ, ta dùng lệnh gì?",
+    "answers": {
+      "A": "Edit Shape",
+      "B": "Shape Outline",
+      "C": "Text Outline",
+      "D": "Picture Border"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Trong MS PowerPoint 2016, để hiển thị bảng dữ liệu của đồ thị, ta dùng lệnh gì trong thẻ (Chart Tools) Design -Add Chart Element?",
+    "answers": {
+      "A": "Data Labels",
+      "B": "Axis Titles",
+      "C": "Gridlines",
+      "D": "Data Table"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Trong MS PowerPoint 2016, để hiển thị nhãn dữ liệu của đồ thị, ta dùng lệnh gì trong (Chart Tools) Design-Add Chart Element?",
+    "answers": {
+      "A": "Data Labels",
+      "B": "Axis Titles",
+      "C": "Gridlines",
+      "D": "Data Table"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Trong MS PowerPoint 2016, để hiệu ứng hoạt hình sau xuất hiện cùng lúc với hiệu ứng hoạt hình kế trước đó, ta dùng lệnh gì?",
+    "answers": {
+      "A": "After Previous",
+      "B": "With Previous",
+      "C": "On Click",
+      "D": "Duration:0.00 sec"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Trong MS PowerPoint 2016, để in nhiều trang chiếu (slide) trên một trang giấy, ta dùng lệnh gì?",
+    "answers": {
+      "A": "Reading View",
+      "B": "Print Layout",
+      "C": "Notes Page",
+      "D": "Handouts"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Trong MS PowerPoint 2016, để in trang chiếu hiện hành, ta dùng lệnh gì trong thẻ File -Print?",
+    "answers": {
+      "A": "Print Selection",
+      "B": "Custom Range",
+      "C": "Print All Slides",
+      "D": "Print Current Slide"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Trong MS PowerPoint 2016, để tạo một bài trình chiếu mới, ta dùng phím gì?",
+    "answers": {
+      "A": "Shift+Tab",
+      "B": "Ctrl+M",
+      "C": "Shift+F5",
+      "D": "Ctrl+N"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Trong MS PowerPoint 2016, để tạo nhóm các trang chiếu, ta dùng lệnh gì trong thẻ Home",
+    "answers": {
+      "A": "Remove All Sections",
+      "B": "Add Section",
+      "C": "Rename Section",
+      "D": "Remove Section"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Trong MS PowerPoint 2016, để thay đổi bố cục cho trang chiếu dùng lệnh gì trong thẻ Home?",
+    "answers": {
+      "A": "Section",
+      "B": "New Slide",
+      "C": "Reset",
+      "D": "Layout"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Trong MS PowerPoint 2016, để thay đổi thời gian trình diễn của một hiệu ứng chuyển trang chiếu, ta dùng lệnh gì?",
+    "answers": {
+      "A": "After",
+      "B": "Delay",
+      "C": "Repeat",
+      "D": "Duration"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Trong MS PowerPoint 2016, để thay đổi vị trí cho bảng chú thích của đồ thị, ta dùng lệnh gì trong (Chart Tools) Design - Add Chart Element?",
+    "answers": {
+      "A": "Axes",
+      "B": "Chart Title",
+      "C": "Axis Titles",
+      "D": "Legend"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Trong MS PowerPoint 2016, để thay thế font Tahoma đang được áp dụng trong bài trình chiếu bằng font Arial, ta sử dụng lệnh nào trong thẻ Home?",
+    "answers": {
+      "A": "Replace-Replace...",
+      "B": "Find",
+      "C": "Replace-Replace Fonts...",
+      "D": "Font"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Trong MS PowerPoint 2016, để thiết lập chuyển tiếp trang tự động khi trình chiếu, ta dùng lệnh gì trong thẻ Transitions?",
+    "answers": {
+      "A": "On Mouse Click",
+      "B": "Effect Options",
+      "C": "Duration",
+      "D": "After"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Trong MS PowerPoint 2016, để thoát khỏi chế độ trình chiếu, ta dùng phím gì?",
+    "answers": {
+      "A": "Pause",
+      "B": "Shift+F5",
+      "C": "Esc",
+      "D": "End"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Trong MS PowerPoint 2016, để thực hiện trình chiếu trực tuyến, ta dùng lệnh gì trong thẻ Slide Show?",
+    "answers": {
+      "A": "Set Up Slide Show",
+      "B": "Present Online",
+      "C": "From Current Slide",
+      "D": "From Beginning"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Trong MS PowerPoint 2016, để trình chiếu từ đầu bài trình chiếu, ta chọn lệnh From Beginning trên thẻ nào?",
+    "answers": {
+      "A": "Slide Show",
+      "B": "Review",
+      "C": "View",
+      "D": "Home"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Trong MS PowerPoint 2016, để trình chiếu từ trang chiếu hiện hành, ta dùng lệnh gì tại thẻ Slide Show?",
+    "answers": {
+      "A": "Broadcast Slide Show",
+      "B": "From Current Slide",
+      "C": "From Beginning",
+      "D": "Custom Slide Show"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Trong MS PowerPoint 2016, để trình chiếu từ trang chiếu hiện hành, ta dùng phím gì?",
+    "answers": {
+      "A": "Alt+F5",
+      "B": "Shift+F5",
+      "C": "Enter+F5",
+      "D": "Ctrl+F5"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Trong MS PowerPoint 2016, để xem trước các hiệu ứng hoạt hình trong khi chọn hiệu ứng, ta chọn lệnh gì trong thẻ Animations -Preview?",
+    "answers": {
+      "A": "From Current Slide",
+      "B": "Start",
+      "C": "From Beginning",
+      "D": "AutoPreview"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Trong MS PowerPoint 2016, để xóa một section và các trang chiếu trong section đó, ta sử dụng lệnh nào?",
+    "answers": {
+      "A": "Rename Section",
+      "B": "Remove All Sections",
+      "C": "Remove Section",
+      "D": "Remove Section & Slides"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Trong MS PowerPoint 2016, để xóa một section, ta dùng lệnh gì?",
+    "answers": {
+      "A": "Remove All Sections",
+      "B": "Remove Section &Slides",
+      "C": "Rename Section",
+      "D": "Remove Section"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Trong MS PowerPoint 2016, định dạng tập tin âm thanh được sử dụng cho hiệu ứng chuyển trang là gì?",
+    "answers": {
+      "A": "WAV",
+      "B": "WMA",
+      "C": "MP3",
+      "D": "FLAC"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Trong MS PowerPoint 2016, hiệu ứng Emphasis dùng để làm gì?",
+    "answers": {
+      "A": "Làm đối tượng được nhấn mạnh trên trang chiếu",
+      "B": "Làm đối tượng thoát ra khỏi trang chiếu",
+      "C": "Làm đối tượng chuyển động theo đường dẫn xác định trên trang chiếu",
+      "D": "Làm đối tượng xuất hiện trên trang chiếu"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Trong MS PowerPoint 2016, hiệu ứng Motion Paths dùng để làm gì?",
+    "answers": {
+      "A": "Làm nổi bật đối tượng trên trang chiếu",
+      "B": "Làm đối tượng chuyển động theo quỹ đạo xác định",
+      "C": "Làm đối tượng thoát ra khỏi trang chiếu",
+      "D": "Làm xuất hiện đối tượng trên trang chiếu"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Trong MS PowerPoint 2016, hiệu ứng Transitions dùng để làm gì?",
+    "answers": {
+      "A": "Tạo hiệu ứng chuyển tiếp giữa các trang chiếu",
+      "B": "Tạo hiệu ứng biến mất cho các đối tượng trong trang chiếu",
+      "C": "Tạo hiệu ứng xuất hiện cho các đối tượng trong trang chiếu",
+      "D": "Tạo hiệu ứng chuyển tiếp cho các đối tượng trong trang chiếu"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Trong MS PowerPoint 2016, khi khai báo âm thanh cho hiệu ứng Transition, lệnh “Loop Until Next Sound” có tác dụng gì?",
+    "answers": {
+      "A": "Âm thanh sẽ phát cho đến hết bài trình chiếu",
+      "B": "Âm thanh sẽ phát cho đến khi chuyển sang trang chiếu tiếp theo",
+      "C": "Âm thanh sẽ phát lặp lại cho đến khi gặp âm thanh khác",
+      "D": "Âm thanh sẽ phát cho đến khi nhấn phím ESC để dừng trình chiếu"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Trong MS PowerPoint 2016, khi làm việc với bảng, lệnh “Lock Aspect Ratio” dùng để làm gì?",
+    "answers": {
+      "A": "Khóa tỷ lệ khung, cho phép chiều cao dòng và độ rộng cột thay đổi theo tỷ lệ thuận",
+      "B": "Khóa tỷ lệ khung, chỉ cho phép chiều cao của dòng thay đổi",
+      "C": "Khóa tỷ lệ khung, cho phép chiều cao dòng và độ rộng cột thay đổi theo tỷ lệ nghịch",
+      "D": "Khóa tỷ lệ khung, chỉ cho phép độ rộng của cột thay đổi"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Trong MS PowerPoint 2016, khi làm việc với đoạn văn bản, để tăng cấp danh sách cho đoạn văn bản, ta dùng phím gì?",
+    "answers": {
+      "A": "Tab",
+      "B": "Esc",
+      "C": "Shift+F5",
+      "D": "F5"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Trong MS PowerPoint 2016, khi làm việc với đoạn văn bản, lệnh Decrease List Level, dùng để làm gì?",
+    "answers": {
+      "A": "Tăng cấp danh sách cho đoạn văn bản",
+      "B": "Giảm câp danh sách cho các đoạn văn bản lẻ",
+      "C": "Tăng cấp danh sách cho các đoạn văn bản chẵn",
+      "D": "Giảm cấp danh sách cho đoạn văn bản"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Trong MS PowerPoint 2016, khi làm việc với SmartArt dạng phân cấp (hierarchy), muốn giáng cấp cho một đối tượng, ta dùng lệnh gì?",
+    "answers": {
+      "A": "Promote",
+      "B": "Move Up",
+      "C": "Move Down",
+      "D": "Demote"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Trong MS PowerPoint 2016, khi sử dụng hiệu ứng hoạt hình, lệnh Trigger dùng để làm gì?",
+    "answers": {
+      "A": "Kích hoạt thi hành hiệu ứng có điều kiện",
+      "B": "Kích hoạt thi hành hiệu ứng khi nhấp chuột vào một đối tượng được chỉ định",
+      "C": "Kích hoạt thi hành hiệu ứng tự động",
+      "D": "Kích hoạt thi hành hiệu ứng vô điều kiện"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Trong MS PowerPoint 2016, khi tạo hiệu ứng chuyển trang chiếu, lệnh Effect Options thường dùng để làm gì?",
+    "answers": {
+      "A": "Thay đổi kiểu hiệu ứng",
+      "B": "Thay đổi thời gian thi hành hiệu ứng",
+      "C": "Thay đổi thời gian chờ để xuất hiện hiệu ứng",
+      "D": "Thay đổi hướng của hiệu ứng"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Trong MS PowerPoint 2016, khi tạo hiệu ứng hoạt hình, lệnh Delay có tác dụng gì?",
+    "answers": {
+      "A": "Thay đổi thời gian thi hành hiệu ứng",
+      "B": "Thay đổi thời gian phát âm thanh",
+      "C": "Thay đổi thời gian để hiệu ứng kết thúc",
+      "D": "Thay đổi thời gian trì hoãn để hiệu ứng bắt đầu thực hiện"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Trong MS PowerPoint 2016, khi tạo sơ đồ tổ chức (hierarchy), muốn thăng cấp cho một đối tượng, ta dùng lệnh gì?",
+    "answers": {
+      "A": "Demote",
+      "B": "Move Up",
+      "C": "Move Down",
+      "D": "Promote"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Trong MS PowerPoint 2016, khi thực hiện chèn Header và Footer cho các trang chiếu, phần nào sau đây cho phép đánh số thứ tự cho các trang chiếu?",
+    "answers": {
+      "A": "Date and time-Fixed",
+      "B": "Slide Number",
+      "C": "Footer",
+      "D": "Date and time-Update automatically"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Trong MS PowerPoint 2016, khi thực hiện lệnh Insert-Header&Footer cho trang chiếu, phần nào sau đây là không có?",
+    "answers": {
+      "A": "Header",
+      "B": "Slide Number",
+      "C": "Date and Time",
+      "D": "Footer"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Trong MS PowerPoint 2016, làm cách nào để biết được bài trình chiếu đang sử dụng mẫu định dạng (theme) tên gì?",
+    "answers": {
+      "A": "Xem trong phần chú thích",
+      "B": "Xem trên thanh trạng thái",
+      "C": "Xem trên thanh tiêu đề",
+      "D": "Xem tại phần Footer"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Trong MS PowerPoint 2016, lệnh \"Don't show on title slide\" sẽ không hiển thị Footer tại trang chiếu nào?",
+    "answers": {
+      "A": "Các trang chiếu lẻ",
+      "B": "Trang chiếu có bố cục là tiêu đề",
+      "C": "Các trang chiếu chẵn",
+      "D": "Trang chiếu đầu tiên và trang chiếu cuối cùng"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Trong MS PowerPoint 2016, lệnh Convert to Shapes dùng để áp dụng cho đối tượng nào?",
+    "answers": {
+      "A": "Picture",
+      "B": "WordArt",
+      "C": "SmartArt",
+      "D": "Shapes"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Trong MS PowerPoint 2016, lệnh Duration trong hiệu ứng chuyển trang có ý nghĩa là gì?",
+    "answers": {
+      "A": "Xác định thời gian chờ thi hành hiệu ứng",
+      "B": "Xác định thời gian tự động thi hành hiệu ứng",
+      "C": "Xác định thời gian thi hành hiệu ứng",
+      "D": "Xác định thời gian phát âm thanh thi hành hiệu ứng"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Trong MS PowerPoint 2016, lệnh Online Pictures được dùng để làm gì?",
+    "answers": {
+      "A": "Chèn hình ảnh từ thư viện của Microsoft Office",
+      "B": "Chèn hình ảnh từ tập tin trong máy tính",
+      "C": "Chèn hình ảnh từ Internet với dịch vụ tìm kiếm Bing",
+      "D": "Chèn hình ảnh từ Internet với dịch vụ tìm kiếm Google Search"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Trong MS PowerPoint 2016, lệnh Photo Album dùng để làm gì?",
+    "answers": {
+      "A": "Tạo mới một bài trình chiếu chứa hình vẽ",
+      "B": "Tạo mới một bài trình chiếu chứa hình ảnh",
+      "C": "Tạo mới một bài trình chiếu chứa đồ thị",
+      "D": "Tạo mới một bài trình chiếu chứa âm thanh"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Trong MS PowerPoint 2016, lệnh Save As sẽ lưu tập tin trình chiếu có phần mở rộng mặc định là gì?",
+    "answers": {
+      "A": "POTX",
+      "B": "PPTM",
+      "C": "PPT",
+      "D": "PPTX"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Trong MS PowerPoint 2016, lệnh Zoom có trong thẻ lệnh nào?",
+    "answers": {
+      "A": "File",
+      "B": "Home",
+      "C": "Review",
+      "D": "View"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Trong MS PowerPoint 2016, loại hiệu ứng hoạt hình nào dùng để nhấn mạnh đối tượng trên trang chiếu?",
+    "answers": {
+      "A": "Motion Paths",
+      "B": "Exit",
+      "C": "Entrance",
+      "D": "Emphasis"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Trong MS PowerPoint 2016, loại hiệu ứng hoạt hình nào làm cho đối tượng xuất hiện trên trang chiếu?",
+    "answers": {
+      "A": "Exit",
+      "B": "Emphasis",
+      "C": "Motion Paths",
+      "D": "Entrance"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Trong MS PowerPoint 2016, loại hiệu ứng hoạt hình nào làm cho một đối tượng trên trang chiếu di chuyển theo một quỹ đạo xác định?",
+    "answers": {
+      "A": "Motion Paths",
+      "B": "Emphasis",
+      "C": "Entrance",
+      "D": "Exit"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Trong MS PowerPoint 2016, phần khung dùng để chứa một trong các đối tượng như bảng biểu, đồ thị, SmartArt, hình, media clip được gọi là gì?",
+    "answers": {
+      "A": "Content Placeholder",
+      "B": "Comment",
+      "C": "Text Box",
+      "D": "Shape"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Trong MS PowerPoint 2016, sử dụng lệnh nào để ẩn một trang chiếu trong thẻ Slide Show?",
+    "answers": {
+      "A": "Custom Slide Show",
+      "B": "Set Up Slide Show",
+      "C": "Hide Slide",
+      "D": "Record Slide Show"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Trong MS PowerPoint 2016, sử dụng lệnh nào để hiện các trang chiếu trong các section?",
+    "answers": {
+      "A": "Remove All sections",
+      "B": "Remove Section &Slides",
+      "C": "Remove section",
+      "D": "Expand All"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Trong MS PowerPoint 2016, tại chế độ hiển thị Slide Sorter, lệnh Zoom cho phép làm gì?",
+    "answers": {
+      "A": "Cho phép phóng to, thu nhỏ tất cả các trang chiếu",
+      "B": "Cho phép phóng to, thu nhỏ các trang chiếu đang được chọn",
+      "C": "Cho phép phóng to, thu nhỏ các trang chiếu lẻ",
+      "D": "Cho phép phóng to, thu nhỏ các trang chiếu chẵn"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Trong MS PowerPoint 2016, thuộc tính Slide 2 of 4 trên thanh trạng thái có ý nghĩa gì?",
+    "answers": {
+      "A": "Bài trình chiếu hiện hành có tổng số trang là 4",
+      "B": "Bài trình chiếu hiện hành có tổng số trang là 2",
+      "C": "Bài trình chiếu hiện hành đang hiển thị trang số 2 trên tổng số 4 trang",
+      "D": "Bài trình chiếu hiện hành đang hiển thị trang số 4 trên tổng số 2 trang"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Trong MS PowerPoint 2016, vùng Content Placeholder của trang chiếu không chứa nút lệnh nào?",
+    "answers": {
+      "A": "Pictures",
+      "B": "Insert Chart",
+      "C": "Insert Table",
+      "D": "Insert WordArt"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Trong MS Word 2016, chức năng Password to modify dùng để làm gì?",
+    "answers": {
+      "A": "Không cho phép mở văn bản ra xem",
+      "B": "Không cho phép lưu cập nhật với nội dung đã chỉnh sửa",
+      "C": "Không cho phép định dạng nội dung văn bản",
+      "D": "Không cho phép lưu văn bản với tên mới"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Trong MS Word 2016, chức năng View Side by Side dùng để làm gì?",
+    "answers": {
+      "A": "Hiển thị hai cửa sổ văn bản chồng lên nhau để so sánh",
+      "B": "Hiển thị hai cửa sổ văn bản song song để so sánh",
+      "C": "Hiển thị tất cả cửa sổ văn bản chồng lên nhau để so sánh",
+      "D": "Hiển thị tất cả cửa sổ văn bản song song để so sánh"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Trong MS Word 2016, để canh biên giữa cho đoạn văn bản, ta dùng tổ hợp phím gì?",
+    "answers": {
+      "A": "Ctrl+R",
+      "B": "Ctrl+C",
+      "C": "Ctrl+L",
+      "D": "Ctrl+E"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Trong MS Word 2016, để canh biên giữa cho nội dung trong ô theo chiều dọc và chiều ngang, ta dùng lệnh gì?",
+    "answers": {
+      "A": "Thẻ (Table Tools) Layout - Align Center",
+      "B": "Thẻ (Table Tools) Layout - Align Bottom Center",
+      "C": "Thẻ (Table Tools) Layout - Align Top Center",
+      "D": "Thẻ Home-Center"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Trong MS Word 2016, để canh đều chiều cao của các dòng đang chọn trong bảng biểu, ta dùng lệnh gì?",
+    "answers": {
+      "A": "Thẻ (Table Tools) Layout-Distribute Rows",
+      "B": "Trỏ chuột tại đường biên dưới của dòng - nhấp giữ và di chuyển chuột",
+      "C": "Thẻ (Table Tools) Layout-Distribute Columns",
+      "D": "Nhấp đúp chuột tại đường biên dưới dòng đang chọn"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Trong MS Word 2016, để chèn bảng có độ rộng của mỗi cột là 1 inches, ta dùng lệnh nào trong hộp thoại Insert Table?",
+    "answers": {
+      "A": "Fixed column width",
+      "B": "AutoFit to contents",
+      "C": "AutoFit to window",
+      "D": "Remember dimensions for new tables"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Trong MS Word 2016, để chèn thêm một cột bên trái cột đang chọn trong bảng biểu, ta dùng lệnh gì trong thẻ (Table Tools) Layout?",
+    "answers": {
+      "A": "Insert Left",
+      "B": "Insert Above",
+      "C": "Insert Below",
+      "D": "Insert Right"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Trong MS Word 2016, để chèn thêm một dòng bên dưới dòng đang chọn trong bảng dữ liệu, ta dùng lệnh gì trong thẻ (Table Tools) Layout?",
+    "answers": {
+      "A": "Insert Below",
+      "B": "Insert Left",
+      "C": "Insert Above",
+      "D": "Insert Right"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Trong MS Word 2016, để chèn tiêu đề ở đầu mỗi trang cho vǎn bản hiện hành, ta dùng lệnh gì?",
+    "answers": {
+      "A": "Thẻ Insert-Header",
+      "B": "Thẻ References-Header",
+      "C": "Thẻ References-Footer",
+      "D": "Thẻ Insert-Footer"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Trong MS Word 2016, để chia cửa sổ văn bản thành hai phần, ta dùng lệnh gì?",
+    "answers": {
+      "A": "Split",
+      "B": "New Window",
+      "C": "Read Mode",
+      "D": "Arrange All"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Trong MS Word 2016, để chọn dòng trong bảng, ta dùng lệnh gì trong thẻ (Table Tools) Layout?",
+    "answers": {
+      "A": "Select Table",
+      "B": "Select Row",
+      "C": "Select Cell",
+      "D": "Select Column"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Trong MS Word 2016, để chọn toàn bộ văn bản từ vị trí con trỏ đến đầu văn bản, ta dùng tổ hợp phím gì?",
+    "answers": {
+      "A": "Ctrl+Shift+Home",
+      "B": "Ctrl+Home",
+      "C": "Shift+Home",
+      "D": "Alt+Home"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Trong MS Word 2016, để chọn toàn bộ văn bản từ vị trí con trỏ đến đầu văn bản, ta dùng tổ hợp phím gì?",
+    "answers": {
+      "A": "Alt+Home",
+      "B": "Ctrl+Shift+Home",
+      "C": "Ctrl+Home",
+      "D": "Shift+Home"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Trong MS Word 2016, để chọn toàn bộ văn bản từ vị trí hiện hành của con trỏ văn bản đến cuối văn bản, ta dùng phím gì?",
+    "answers": {
+      "A": "Ctrl+End",
+      "B": "End",
+      "C": "Shift+End",
+      "D": "Ctrl+Shift+End"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Trong MS Word 2016, để chọn toàn bộ văn bản, ta dùng tổ hợp phím gì?",
+    "answers": {
+      "A": "Alt+A",
+      "B": "Ctrl+Shift+A",
+      "C": "Ctrl+A",
+      "D": "Shift+A"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Trong MS Word 2016, để chuyển đổi chữ thường sang chữ in hoa, ta dùng phím tắt gì?",
+    "answers": {
+      "A": "Shift+F3",
+      "B": "Ctrl+F4",
+      "C": "Ctrl+F3",
+      "D": "Shift+F4"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Trong MS Word 2016, để chuyển đổi cửa sổ giữa các văn bản đang mở, ta dùng lệnh gì trong thẻ View?",
+    "answers": {
+      "A": "Open",
+      "B": "Arrange All",
+      "C": "New Window",
+      "D": "Switch Windows"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Trong MS Word 2016, để di chuyển con trỏ văn bản đến đầu trang tiếp theo, ta dùng phím gì?",
+    "answers": {
+      "A": "Page Up",
+      "B": "Ctrl+Page Down",
+      "C": "Page Down",
+      "D": "Ctrl+Page Up"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Trong MS Word 2016, để di chuyển đến đầu văn bản, ta nhấn phím gì?",
+    "answers": {
+      "A": "Shift + Home",
+      "B": "Ctrl + Home",
+      "C": "Ctrl + Shift + Home",
+      "D": "Home"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Trong MS Word 2016, để định dạng in đậm cho văn bản đang chọn, ta dùng lệnh gì?",
+    "answers": {
+      "A": "Bold",
+      "B": "Italic",
+      "C": "Font Color",
+      "D": "Underline"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Trong MS Word 2016, để định dạng Leader cho vǎn bản, ta dùng kỹ thuật gì?",
+    "answers": {
+      "A": "Column",
+      "B": "Header",
+      "C": "Table",
+      "D": "Tab"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Trong MS Word 2016, để định dạng màu nền cho đoạn văn bản đang chọn, ta dùng lệnh gì?",
+    "answers": {
+      "A": "Font Color",
+      "B": "Shading",
+      "C": "Borders",
+      "D": "Text Highlight Color"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Trong MS Word 2016, để định dạng văn bản có dạng chữ in hoa nhỏ, ta dùng lệnh gì?",
+    "answers": {
+      "A": "Hộp thoại Font-All caps",
+      "B": "Hộp thoại Font-Small caps",
+      "C": "Change Case-lowercase",
+      "D": "Change Case-UPPERCASE"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Trong MS Word 2016, để định dạng văn bản đang chọn canh biên đều hai bên, ta dùng lệnh gì?",
+    "answers": {
+      "A": "Center",
+      "B": "Right",
+      "C": "Justify",
+      "D": "Left"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Trong MS Word 2016, để định dạng văn bản đang chọn có dạng chỉ số dưới, ta dùng phím gì?",
+    "answers": {
+      "A": "Shift+=",
+      "B": "Alt+=",
+      "C": "Ctrl+Shift+=",
+      "D": "Ctrl+="
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Trong MS Word 2016, để hiển thị văn bản sao cho chiều rộng trang giấy bằng chiều rộng màn hình, ta dùng lệnh gì trong thẻ View?",
+    "answers": {
+      "A": "Page Width",
+      "B": "Two Page",
+      "C": "One Page",
+      "D": "100%"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Trong MS Word 2016, để in các trang chẳn của văn bản, ta khai báo thêm lệnh gì trong thẻ File-Print-Settings?",
+    "answers": {
+      "A": "Print Current Page",
+      "B": "Only Print Odd Pages",
+      "C": "Only Print Even Pages",
+      "D": "Custom Print"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Trong MS Word 2016, để in các trang lẻ của văn bản, ta khai báo thêm lệnh gì trong thẻ File-Print-Settings?",
+    "answers": {
+      "A": "Print Current Page",
+      "B": "Only Print Odd Pages",
+      "C": "Custom Print",
+      "D": "Only Print Even Pages"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Trong MS Word 2016, để kẻ khung cho cạnh trên của đoạn văn bản đang chọn, ta dùng lệnh gì?",
+    "answers": {
+      "A": "Outside Borders",
+      "B": "Top Border",
+      "C": "All Borders",
+      "D": "Bottom Border"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Trong MS Word 2016, để lưu tập tin hiện hành với tên khác, ta dùng lệnh gì?",
+    "answers": {
+      "A": "Thẻ File-Save",
+      "B": "Ctrl+P",
+      "C": "Ctrl+S",
+      "D": "Thẻ File-Save As"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Trong MS Word 2016, để mở văn bản hiện hành trên một cửa sổ khác, ta dùng lệnh gì trong thẻ View?",
+    "answers": {
+      "A": "New Window",
+      "B": "Split",
+      "C": "Switch Windows",
+      "D": "Arrange All"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Trong MS Word 2016, để nhập ký tự Tab trong bảng dữ liệu, ta nhấn phím gì?",
+    "answers": {
+      "A": "Shift + Tab",
+      "B": "Tab",
+      "C": "Ctrl + Tab",
+      "D": "Alt + Tab"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Trong MS Word 2016, để phục hồi lại thao tác vừa thực hiện, ta dùng lệnh gì?",
+    "answers": {
+      "A": "Back",
+      "B": "Redo",
+      "C": "Previous",
+      "D": "Undo"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Trong MS Word 2016, để sao chép định dạng của văn bản, ta dùng lệnh gì?",
+    "answers": {
+      "A": "Clear Formatting",
+      "B": "Paste special",
+      "C": "Ctrl+C",
+      "D": "Format Painter"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Trong MS Word 2016, để sao chép định dạng liên tiếp cho nhiều khối văn bản khác nhau, ta thực hiện lệnh Format Painter như thế nào?",
+    "answers": {
+      "A": "Nhấp nút Format Painter",
+      "B": "Không thực hiện được",
+      "C": "Nhấp đúp nút Format Painter",
+      "D": "Nhấp ba lần liên tiếp nút Format Painter"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Trong MS Word 2016, để thay đổi độ rộng ký tự, ta dùng lệnh gì trong hộp thoại Font?",
+    "answers": {
+      "A": "Spacing",
+      "B": "Position",
+      "C": "Font Size",
+      "D": "Scale"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Trong MS Word 2016, để thay đổi hướng giấy in cho văn bản, ta dùng lệnh gì trong thẻ Layout?",
+    "answers": {
+      "A": "Margins",
+      "B": "Columns",
+      "C": "Orientation",
+      "D": "Size"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Trong MS Word 2016, để thay đổi khoảng cách giữa các dòng trong đoạn vǎn bản, ta dùng lệnh gì trong hộp thoại Paragraph?",
+    "answers": {
+      "A": "Line spacing",
+      "B": "Spacing Before",
+      "C": "Spacing After",
+      "D": "Mirror indents"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Trong MS Word 2016, để thay đổi khoảng cách giữa các ký tự, ta dùng lệnh gì?",
+    "answers": {
+      "A": "Spacing After",
+      "B": "Spacing Before",
+      "C": "Spacing",
+      "D": "Line spacing"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Trong MS Word 2016, để thay đổi khoảng cách giữa đoạn đang chọn với đoạn phía trên, ta dùng lệnh gì trong hộp thoại Paragraph?",
+    "answers": {
+      "A": "Spacing After",
+      "B": "Hanging",
+      "C": "Spacing Before",
+      "D": "Line spacing"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Trong MS Word 2016, để thay đổi kiểu đường viền khung cho đoạn văn bản đang chọn, ta dùng mục gì trong hộp thoại Borders and Shading?",
+    "answers": {
+      "A": "Apply to",
+      "B": "Color",
+      "C": "Style",
+      "D": "Width"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Trong MS Word 2016, để thay đổi lề phải của đoạn văn bản đang chọn, ta dùng lệnh gì?",
+    "answers": {
+      "A": "Thẻ Home-Increase Indent",
+      "B": "Thẻ Layout-Indent Left",
+      "C": "Thẻ Layout-Indent Right",
+      "D": "Thẻ Home-Decrease Indent"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Trong MS Word 2016, để thiết lập khổ giấy in, ta dùng lệnh gì tại thẻ Layout?",
+    "answers": {
+      "A": "Orientation",
+      "B": "Page Borders",
+      "C": "Margins",
+      "D": "Size"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Trong MS Word 2016, để thực hiện ngắt nội dung tại vị trí con trỏ sang đầu trang tiếp theo, ta dùng phím tắt gì?",
+    "answers": {
+      "A": "Ctrl+Page Down",
+      "B": "Ctrl+Enter",
+      "C": "Ctrl+Page Up",
+      "D": "Nhấn Enter đến khi sang đầu trang tiếp theo"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Trong MS Word 2016, để xác định vị trí của hình ảnh (picture) trên một trang vǎn bản thì sau khi chọn hình ảnh, ta dùng lệnh gì trong thẻ (Picture Tools) Format?",
+    "answers": {
+      "A": "Wrap Text",
+      "B": "Position",
+      "C": "Selection Pane",
+      "D": "Align"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Trong MS Word 2016, để xoá dòng đang chọn trong bảng dữ liệu, ta dùng lệnh gì trong thẻ (Table Tools) Layout?",
+    "answers": {
+      "A": "Delete-Delete Columns",
+      "B": "Delete-Delete Table",
+      "C": "Nhấn phím Delete",
+      "D": "Delete-Delete Rows"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Trong MS Word 2016, để xoay hình vẽ một góc 90 độ theo chiều kim đồng hồ, ta dùng lệnh gì trong thẻ (Picture Tools) Format?",
+    "answers": {
+      "A": "Rotate Right 90 degree",
+      "B": "Rotate Left 90 degree",
+      "C": "Flip Horizontal",
+      "D": "Flip Vertical"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Trong MS Word 2016, để xuống dòng nhưng không tạo thêm một đoạn vǎn bản (paragraph) khác, ta dùng phím gì?",
+    "answers": {
+      "A": "Shift+Enter",
+      "B": "Alt+Enter",
+      "C": "Enter",
+      "D": "Ctrl+Enter"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Trong MS Word 2016, định dạng Drop Cap dùng để làm gì?",
+    "answers": {
+      "A": "Tạo chữ to đầu đoạn và chữ này có thể kéo dài trên nhiều dòng",
+      "B": "Tạo chữ to giữa đoạn và chữ này có thể kéo dài trên nhiều dòng",
+      "C": "Tạo chữ to cuối đoạn và chữ này có thể kéo dài trên nhiều dòng",
+      "D": "Tạo chữ to ở vị trí bất kỳ trong đoạn và chữ này có thể kéo dài trên nhiều dòng"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Trong MS Word 2016, khi con trỏ đang đứng ở ô cuối cùng của bảng biểu, ta nhấn phím Tab, MS Word sẽ thực hiện lệnh gì?",
+    "answers": {
+      "A": "Chèn một cột trống bên trái cột con trỏ đang đứng",
+      "B": "Chèn một dòng trống phía cuối bảng",
+      "C": "Chèn một dòng trống phía trên dòng con trỏ đang đứng",
+      "D": "Chèn một cột trống bên phải cột con trỏ đang đứng"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Trong MS Word 2016, khi lưu vǎn bản hiện hành với định dạng của Word 97-2003 thì tập tin sẽ có phần mở rộng là gì?",
+    "answers": {
+      "A": ".doc",
+      "B": ".dot",
+      "C": ".docm",
+      "D": ".docx"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Trong MS Word 2016, khi thực hiện các thao tác chọn văn bản, thao tác nào sau đây là sai?",
+    "answers": {
+      "A": "Nhấp đúp ở đầu dòng để chọn nguyên một dòng đó",
+      "B": "Nhấp nhanh ba lần lên một đoạn văn bản để chọn đoạn văn bản đó",
+      "C": "Giữ Ctrl và nhấp chuột lên câu cần chọn để chọn nguyên câu đó",
+      "D": "Nhấp đúp lên một từ để chọn từ đó"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Trong MS Word 2016, lệnh All caps trong hộp thoại Font dùng để làm gì?",
+    "answers": {
+      "A": "Định dạng văn bản có dạng chữ hoa đầu câu",
+      "B": "Định dạng văn bản có dạng chữ hoa nhỏ",
+      "C": "Định dạng văn bản có dạng chữ hoa",
+      "D": "Định dạng văn bản có dạng chữ hoa đầu mỗi từ"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Trong MS Word 2016, lệnh Change Case-Capitalize Each Word dùng để làm gì?",
+    "answers": {
+      "A": "Chuyển đổi các ký tự đang chọn thành chữ thường",
+      "B": "Chuyển đổi các ký tự đang chọn thành chữ hoa",
+      "C": "Chuyển đổi ký tự đầu tiên của các từ đang chọn thành chữ hoa",
+      "D": "Chuyển đổi ký tự đầu câu đang chọn thành chữ hoa"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Trong MS Word 2016, lệnh Clear Formatting dùng để làm gì?",
+    "answers": {
+      "A": "Xóa văn bản đang chọn",
+      "B": "Xóa định dạng ký tự đầu đoạn",
+      "C": "Xóa định dạng văn bản đang chọn",
+      "D": "Xóa định dạng tab"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Trong MS Word 2016, lệnh định dạng nào sau đây sẽ không bị xoá khi thực hiện lệnh Clear Formatting?",
+    "answers": {
+      "A": "Italic",
+      "B": "Bold",
+      "C": "Font Color",
+      "D": "Text Highlight Color"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Trong MS Word 2016, lệnh Format Painter dùng để làm gì?",
+    "answers": {
+      "A": "Sao chép vǎn bản",
+      "B": "Sao chép hiệu ứng văn bản",
+      "C": "Sao chép định dạng văn bản",
+      "D": "Xóa định dạng văn bản"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Trong MS Word 2016, lệnh Insert - Footer dùng để làm gì?",
+    "answers": {
+      "A": "Chèn tiêu đề ở đầu mỗi trang",
+      "B": "Chèn tiêu đề ở cuối trang đầu",
+      "C": "Chèn tiêu đề ở đầu trang đầu",
+      "D": "Chèn tiêu đề ở cuối mỗi trang"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Trong MS Word 2016, lệnh Insert Endnote dùng để làm gì?",
+    "answers": {
+      "A": "Chèn chú thích ở đầu văn bản",
+      "B": "Chèn chú thích ở cuối văn bản",
+      "C": "Chèn chú thích ở cuối trang",
+      "D": "Chèn chú thích ở đầu trang"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Trong MS Word 2016, lệnh Insert Footnote dùng để làm gì?",
+    "answers": {
+      "A": "Chèn chú thích ở cuối văn bản",
+      "B": "Chèn chú thích ở cuối trang",
+      "C": "Chèn chú thích ở đầu trang",
+      "D": "Chèn chú thích ở đầu vǎn bản"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Trong MS Word 2016, lệnh nào cho phép bạn có thể nhìn thấy hai vị trí bất kỳ trên cùng một cửa sổ văn bản?",
+    "answers": {
+      "A": "Switch Windows",
+      "B": "Split",
+      "C": "Arrange All",
+      "D": "New Window"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Trong MS Word 2016, lệnh Open dùng để làm gì?",
+    "answers": {
+      "A": "Mở một cửa sổ chương trình MS Word mới",
+      "B": "Mở một tập tin văn bản đã có trước đó",
+      "C": "Chèn đồ thị vào văn bản",
+      "D": "Chèn hình vào văn bản"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Trong MS Word 2016, lệnh Superscript dùng để làm gì?",
+    "answers": {
+      "A": "Định dạng văn bản đang chọn có dạng chỉ số dưới",
+      "B": "Tạo đường gạch dưới nét đôi",
+      "C": "Định dạng văn bản đang chọn có dạng chỉ số trên",
+      "D": "Xoá định dạng văn bản"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Trong MS Word 2016, nhấp nhanh chuột trái 3 lần vào vị trí nào đó trong đoạn văn bản sẽ có tác dụng gì?",
+    "answers": {
+      "A": "Chọn toàn bộ văn bản",
+      "B": "Chọn một từ tại vị trí nhấp chuột",
+      "C": "Chọn nguyên dòng tại vị trí nhấp chuột.",
+      "D": "Chọn nguyên đoạn văn bản (paragraph) tại vị trí nhấp chuột"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Trong MS Word 2016, nội dung văn bản nào dưới đây là nhập đúng quy cách soạn thảo vǎn bản?",
+    "answers": {
+      "A": "“Máy tính cá nhân (personal computer ), thường được gọi là máy tính.”",
+      "B": "“Máy tính cá nhân (personal computer) , thường được gọi là máy tính.”",
+      "C": "“Máy tính cá nhân (personal computer), thường được gọi là máy tính.”",
+      "D": "“Máy tính cá nhân (personal computer), thường được gọi là máy tính.”"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Trong MS Word 2016, ở chế độ hiển thị Print Layout, khi nhấp đúp chuột giữa đường biên trên và dưới của hai mép giấy có tác dụng gì?",
+    "answers": {
+      "A": "Ẩn/ hiện phần lề trên của trang văn bản",
+      "B": "Ẩn/ hiện phần lề dưới của trang văn bản",
+      "C": "Ẩn/ hiện phần lề trên và dưới của trang văn bản",
+      "D": "Chèn thêm một trang mới"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Trong MS Word 2016, thông số “5 words” trên thanh trạng thái có nghĩa là gì?",
+    "answers": {
+      "A": "Cho biết văn bản hiện hành có tổng số đoạn là 5",
+      "B": "Cho biết văn bản hiện hành có tổng số trang là 5",
+      "C": "Cho biết văn bản hiện hành có tổng số từ là 5",
+      "D": "Cho biết văn bản hiện hành có tổng số ký tự là 5"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Trong MS Word 2016, thông số Page 3 of 5 trên thanh trạng thái có nghĩa là gì?",
+    "answers": {
+      "A": "Cho biết văn bản hiện hành có tổng số trang là 3",
+      "B": "Cho biết văn bản hiện hành đang hiển thị trang số 3 trên tổng số 5 trang của văn bản",
+      "C": "Cho biết văn bản hiện hành có tổng số trang là 5",
+      "D": "Cho biết văn bản hiện hành đang hiển thị trang số 5 trên tổng số 3 trang của văn bản"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Trong MS Word 2016, văn bản được lưu dưới dạng sách điện tử (e-book) thường có phần mở rộng là gì?",
+    "answers": {
+      "A": "DOCX",
+      "B": "DOC",
+      "C": "DOTM",
+      "D": "PDF"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Trong MS Word 2016, văn bản được lưu dưới dạng sách điện tử (ebook) thường có phần mở rộng là gì?",
+    "answers": {
+      "A": ".pdf",
+      "B": ".doc",
+      "C": ".docx",
+      "D": ".dotm"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Trong trang tìm kiếm hình ảnh của Google, lệnh nào cho phép lọc kết quả tìm kiếm là các hình vẽ?",
+    "answers": {
+      "A": "Gif",
+      "B": "Clip art",
+      "C": "Any type",
+      "D": "Line drawing"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Trong trang web, các siêu liên kết (hyperlink) thường dùng để làm gì?",
+    "answers": {
+      "A": "Chuyển đến trang tiếp theo",
+      "B": "Chuyển đến trang chủ của trình duyệt web",
+      "C": "Chuyển đến trang web khác",
+      "D": "Chuyển về trang trước đó"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Trong trang web, Cookie dùng để làm gì?",
+    "answers": {
+      "A": "Lưu trữ mật khẩu người dùng",
+      "B": "Lưu trữ các trang web đã duyệt",
+      "C": "Lưu trữ lịch sử duyệt web",
+      "D": "Lưu trữ thông tin duyệt web như các tuỳ chọn trang web, thông tin hồ sơ cá nhân"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Trong trang web, Pop up là gì?",
+    "answers": {
+      "A": "Là hộp thoại xuất hiện khi người dùng nhấp vào liên kết",
+      "B": "Là hộp thoại tự động xuất hiện khi người dùng đang duyệt web",
+      "C": "Là hộp thoại xuất hiện khi người dùng nhấp vào nút Home page",
+      "D": "Là hộp thoại tự động xuất hiện khi người dùng đóng trình duyệt web"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Trong trình duyệt Google Chrome, bạn không thể xóa loại dữ liệu duyệt web nào?",
+    "answers": {
+      "A": "Lịch sử duyệt web",
+      "B": "Mật khẩu",
+      "C": "Lịch sử tải xuống",
+      "D": "Nội dung trên trang web hiện hành"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Trong trình duyệt Google Chrome, chức năng Bookmark dùng để làm gì?",
+    "answers": {
+      "A": "Lưu lại địa chỉ các trang web mà người dùng đã từng duyệt qua",
+      "B": "Lưu lại địa chỉ các trang web mà người dùng cần chặn",
+      "C": "Lưu lại mật khẩu để truy cập các trang web",
+      "D": "Lưu lại địa chỉ của một số trang web yêu thích mà người dùng muốn đánh dấu"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Trong trình duyệt Google Chrome, để đánh dấu địa chỉ của một trang web, ta dùng lệnh gì?",
+    "answers": {
+      "A": "Save link as...",
+      "B": "Bookmark",
+      "C": "Copy link address",
+      "D": "History"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Trong trình duyệt Google Chrome, để đánh dấu trang web yêu thích, ta dùng lệnh gì?",
+    "answers": {
+      "A": "Save page as",
+      "B": "Bookmark",
+      "C": "Cookie",
+      "D": "History"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Trong trình duyệt Google Chrome, nút Back dùng để làm gì?",
+    "answers": {
+      "A": "Trở về trang web không có nội dung",
+      "B": "Trở về trang chủ của trình duyệt",
+      "C": "Trở về trang chủ của Website hiện hành",
+      "D": "Trở về trang web trước đó"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Trong trình duyệt Google Chrome, nút Forward dùng để làm gì?",
+    "answers": {
+      "A": "Trở về trang web trước đó",
+      "B": "Trở về trang chủ của Website hiện hành",
+      "C": "Trở về trang chủ của trình duyệt",
+      "D": "Chuyển đến trang web sau"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Trong trình duyệt Google Chrome, nút Home page dùng để làm gì?",
+    "answers": {
+      "A": "Chuyển về trang chủ của trình duyệt",
+      "B": "Chuyển về trang trước đó",
+      "C": "Chuyển về trang chủ của trang web hiện hành",
+      "D": "Chuyển đến trang tiếp theo"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Trong Windows 10 để hiển thị tiếng Việt trong phần mềm soạn thảo văn bản, máy tính cần phải được cài đặt gì?",
+    "answers": {
+      "A": "Trình điều khiển bàn phím tiếng Việt",
+      "B": "Font chữ tiếng Việt",
+      "C": "Trình điều khiển bàn phím tiếng Việt và Font Unicode",
+      "D": "Trình điều khiển bàn phím Unikey và Font Unicode"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Trong Windows 10, bạn có thể tạo hai tập tin trùng tên chính trong cùng một thư mục được không?",
+    "answers": {
+      "A": "Được phép, với điều kiện phần mở rộng tập tin khác nhau",
+      "B": "Được phép, với điều kiện dung lượng tập tin khác nhau",
+      "C": "Được phép, với điều kiện thời gian tạo tập tin khác nhau",
+      "D": "Không được phép"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Trong Windows 10, chọn chế độ hiển thị nào để cửa sổ phải của File Explorer thể hiện các cột: tên, thời gian, kiểu, kích cỡ?",
+    "answers": {
+      "A": "Details",
+      "B": "List",
+      "C": "Large Icons",
+      "D": "Content"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Trong Windows 10, chương trình File Explorer cho phép người dùng sử dụng toán tử nào trong việc tìm kiếm?",
+    "answers": {
+      "A": "DIV",
+      "B": "OR",
+      "C": "SUB",
+      "D": "XOR"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Trong Windows 10, chương trình MS Paint là gì?",
+    "answers": {
+      "A": "Phần mềm nghe nhạc, được tích hợp trong Windows 10",
+      "B": "Phần mềm được tích hợp trong Windows 10",
+      "C": "Phần mềm xử lý ảnh, được tích hợp trong Windows 10",
+      "D": "Phần mềm xử lý văn bản, được tích hợp trong Windows 10"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Trong Windows 10, cửa sổ chương trình ứng dụng, thanh cuộn (scroll bar) xuất hiện khi nào?",
+    "answers": {
+      "A": "Vùng làm việc nhỏ hơn desktop",
+      "B": "Vùng làm việc lớn hơn desktop",
+      "C": "Vùng làm việc nhỏ hơn cửa sổ chương trình",
+      "D": "Vùng làm việc lớn hơn cửa sổ chương trình"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Trong Windows 10, cửa sổ phải của chương trình File Explorer hiển thị nội dung gì?",
+    "answers": {
+      "A": "Nội dung của tập tin hiện hành",
+      "B": "Thông tin của máy tính",
+      "C": "Cấu trúc cây thư muc",
+      "D": "Danh sách các thư mục, tập tin"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Trong Windows 10, desktop là gì?",
+    "answers": {
+      "A": "Vùng làm việc chính của Windows 10, chứa các biểu tượng và thanh taskbar",
+      "B": "Vùng có thể thay đổi độ phân giải của màn hình",
+      "C": "Vùng làm việc chính của Windows 10, không chứa các biểu tượng và thanh taskbar",
+      "D": "Vùng chứa thanh taskbar"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Trong Windows 10, để chèn các ký tự đặc biệt vào chương trình MS Paint, cần gọi chương trình hỗ trợ nào?",
+    "answers": {
+      "A": "WordPad",
+      "B": "Character Map",
+      "C": "Notepad",
+      "D": "Snipping tool"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Trong Windows 10, để chia sẻ một thư mục qua mạng nội bộ, ta dùng lệnh nào?",
+    "answers": {
+      "A": "Copy",
+      "B": "Send to",
+      "C": "Open in new windows",
+      "D": "Share with"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Trong Windows 10, để di chuyển tập tin, ta dùng lệnh nào?",
+    "answers": {
+      "A": "Rename",
+      "B": "Cut",
+      "C": "Copy",
+      "D": "Delete"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Trong Windows 10, để dùng chuột chọn nhiều đối tượng liên tiếp nhau trong File Explorer ta cần giữ phím nào?",
+    "answers": {
+      "A": "Shift",
+      "B": "Alt",
+      "C": "Esc",
+      "D": "Ctrl"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Trong Windows 10, để đóng một ứng dụng đang mở, bạn cần thực hiện thao tác gì?",
+    "answers": {
+      "A": "Nhấn phím Esc",
+      "B": "Nhấn phím Delete",
+      "C": "Nhấn phím Alt+F2",
+      "D": "Nhấp vào dấu 'X' ở góc trên bên phải cửa sổ ứng dụng"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Trong Windows 10, để đổi tên tập tin, ta dùng lệnh nào?",
+    "answers": {
+      "A": "Rename",
+      "B": "Copy",
+      "C": "Paste",
+      "D": "Delete"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Trong Windows 10, để gỡ bỏ chương trình ứng dụng, ta dùng lệnh gì?",
+    "answers": {
+      "A": "Install",
+      "B": "Uninstall",
+      "C": "Restore",
+      "D": "Change"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Trong Windows 10, để nhập và hiển thị tiếng Việt trong phần mềm soạn thảo vǎn bản, máy tính cần phải được cài đặt gì?",
+    "answers": {
+      "A": "Font chữ tiếng Việt",
+      "B": "Trình điều khiển bàn phím tiếng Việt và Font chữ tiếng Việt tương ứng",
+      "C": "Trình điều khiển bàn phím tiếng Việt",
+      "D": "Trình điều khiển bàn phím tiếng Việt và Font Unicode"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Trong Windows 10, để phục hồi thư mục, tập tin đã xoá trong Recycle Bin, ta dùng lệnh nào?",
+    "answers": {
+      "A": "Restore",
+      "B": "Paste",
+      "C": "Copy",
+      "D": "Rename"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Trong Windows 10, để sao chép tập tin, ta dùng lệnh nào?",
+    "answers": {
+      "A": "Paste",
+      "B": "Delete",
+      "C": "Rename",
+      "D": "Copy"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Trong Windows 10, để tạo lối tắt, ta dùng lệnh nào?",
+    "answers": {
+      "A": "New-Folder",
+      "B": "New-Shortcut",
+      "C": "New-Contact",
+      "D": "New-Document"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Trong Windows 10, để tạo mới thư mục, ta dùng lệnh nào?",
+    "answers": {
+      "A": "New-Document",
+      "B": "New-Shortcut",
+      "C": "New-Contact",
+      "D": "New-Folder"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Trong Windows 10, để thay đổi hình nền cho desktop ta dùng lệnh nào?",
+    "answers": {
+      "A": "View",
+      "B": "Screen resolution",
+      "C": "Personalize",
+      "D": "Gadgets"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Trong Windows 10, để xác lập thuộc tính tập tin, ta dùng lệnh nào?",
+    "answers": {
+      "A": "Rename",
+      "B": "Cut",
+      "C": "Properties",
+      "D": "Paste"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Trong Windows 10, để xoá tập tin, ta dùng lệnh nào?",
+    "answers": {
+      "A": "Rename",
+      "B": "Delete",
+      "C": "Copy",
+      "D": "Paste"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Trong Windows 10, định dạng nào là định dạng mặc định nén không mất dữ liệu?",
+    "answers": {
+      "A": "MP4",
+      "B": "JPG",
+      "C": "ZIP",
+      "D": "MP3"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Trong Windows 10, khi dùng File Explorer xem nhanh nội dung các tập tin văn bản MS Word, ta dùng lệnh nào?",
+    "answers": {
+      "A": "Preview pane",
+      "B": "Open",
+      "C": "Details pane",
+      "D": "Navigation pane"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Trong Windows 10, khi ra lệnh đóng chương trình WordPad mà dữ liệu chưa được lưu lại sẽ dẫn đến việc gì?",
+    "answers": {
+      "A": "Bạn sẽ nhận được cảnh báo",
+      "B": "Dữ liệu đó sẽ bị hư hại",
+      "C": "Dữ liệu sẽ được chứa tạm trong ROM",
+      "D": "Dữ liệu đó sẽ bị mất đi"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Trong Windows 10, lệnh Properties khi nhấp phải trên biểu tượng This PC dùng để làm gì?",
+    "answers": {
+      "A": "Hiển thị các thông tin của ổ Đĩa",
+      "B": "Hiển thị các thông tin của thư mục",
+      "C": "Hiển thị các thông tin của tập tin",
+      "D": "Hiển thị các thông tin của máy tính"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Trong Windows 10, mặc định việc chia sẻ dữ liệu qua mạng nội bộ chỉ cho phép người được chia sẻ quyền gì?",
+    "answers": {
+      "A": "Xoá (delete)",
+      "B": "Toàn quyền (full control)",
+      "C": "Hiệu chỉnh (edit)",
+      "D": "Chỉ đọc (read only)"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Trong Windows 10, mỗi ổ đĩa có tối đa bao nhiêu thư mục gốc?",
+    "answers": {
+      "A": "3",
+      "B": "1",
+      "C": "2",
+      "D": ">3"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Trong Windows 10, người dùng có thể sử dụng chức năng trợ giúp bằng cách nhấn phím nào?",
+    "answers": {
+      "A": "F4",
+      "B": "F3",
+      "C": "F2",
+      "D": "F1"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Trong Windows 10, nơi chứa tạm các tập tin đã xoá tên gì?",
+    "answers": {
+      "A": "Taskbar",
+      "B": "Computer",
+      "C": "Recycle Bin",
+      "D": "Desktop"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Trong Windows 10, phần mở rộng của tập tin thường được tạo như thế nào?",
+    "answers": {
+      "A": "Do chương trình ứng dụng tự đặt",
+      "B": "Người dùng không thể thay đổi",
+      "C": "Người dùng có thể thay đổi một lần",
+      "D": "Do người dùng tự đặt tên"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Trong Windows 10, phần tên chính của tập tin được tạo như thế nào?",
+    "answers": {
+      "A": "Thường do người dùng tự đặt tên",
+      "B": "Người dùng có thể thay đổi một lần",
+      "C": "Thường do chương trình ứng dụng tự cài đặt",
+      "D": "Người dùng không thể thay đổi"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Trong Windows 10, phím tắt để gọi trình quản lý tác vụ (Task Manager) là gì?",
+    "answers": {
+      "A": "Ctrl+Alt+Shift",
+      "B": "Ctrl+Shift+Delete",
+      "C": "Ctrl+Alt+Delete",
+      "D": "Shift+Alt+Delete"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Trong Windows 10, Shortcut là gì?",
+    "answers": {
+      "A": "Một thư mục đặc biệt chỉ chứa liên kết trỏ đến vị trí của một đối tượng nào đó",
+      "B": "Một tập tin tự động thi hành",
+      "C": "Một dãy các thư mục liên tiếp nhau, được phân cách bởi ký hiệu \\",
+      "D": "Một tập tin đặc biệt chỉ chứa liên kết trỏ đến vị trí của một đối tượng nào đó"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Trong Windows 10, thẻ lệnh nào dùng để chọn cách hiển thị thư mục và tập tin tại cửa sổ bên phải của chương trình File Explorer?",
+    "answers": {
+      "A": "Home",
+      "B": "Share",
+      "C": "File",
+      "D": "View"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Trong Windows 10, thiết bị nào sau đây được phân loại là thiết bị lưu trữ di động (Removable Storage)",
+    "answers": {
+      "A": "Internal hard disk",
+      "B": "ROM",
+      "C": "RAM",
+      "D": "USB flash drive"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "Trong Windows 10, thư mục (folder) là gì?",
+    "answers": {
+      "A": "Là đối tượng có thể chứa các tập tin, lối tắt và các thư mục con",
+      "B": "Là các biểu tượng (icon) tương ứng với chương trình ứng dụng",
+      "C": "Là các bìa hồ sơ chứa thông tin",
+      "D": "Là các chương trình ứng dụng được cài đặt trên máy tính"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Trong Windows 10, Windows Security có thể chọn quét riêng một thư mục hay tập tin cụ thể bằng lệnh nào?",
+    "answers": {
+      "A": "Real-time protection",
+      "B": "Quick Scan",
+      "C": "Custom Scan",
+      "D": "Full Scan"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Tư thế ngồi làm việc đúng khi sử dụng máy tính là gì?",
+    "answers": {
+      "A": "Ngồi thẳng để lưng tạo với mặt ghế một góc vuông và tâm màn hình cao hơn mắt",
+      "B": "Ngồi thẳng để lưng tạo với mặt ghế một góc vuông và tâm màn hình thấp hơn mắt",
+      "C": "Ngồi thẳng để lưng tạo với mặt ghế một góc nghiêng 75 độ và tâm màn hình thấp hơn mắt",
+      "D": "Ngồi thẳng để lưng tạo với mặt ghế một góc nghiêng 75 độ và tâm màn hình cao hơn mắt"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Twitter là tên gọi của dịch vụ Internet nào?",
+    "answers": {
+      "A": "Mạng xã hội (social network)",
+      "B": "Nhật ký cá nhân (blog)",
+      "C": "Diễn đàn (forum)",
+      "D": "Thư điện tử (e-mail)"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Twitter thuộc loại dịch vụ nào trên Internet?",
+    "answers": {
+      "A": "Diễn đàn",
+      "B": "Mạng xã hội",
+      "C": "Tán gẫu",
+      "D": "Hội thảo từ xa"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Unikey là tên của chương trình gì?",
+    "answers": {
+      "A": "Chương trình xử lý bảng tính tiếng Việt",
+      "B": "Chương trình điều khiển bàn phím gõ tiếng Việt",
+      "C": "Chương trình trình chiếu tiếng Việt",
+      "D": "Chương trình soạn thảo văn bản tiếng Việt"
+    },
+    "correct": "B"
+  },
+  {
+    "question": "Ứng dụng Google nào dưới đây là trình duyệt web?",
+    "answers": {
+      "A": "Google Chrome",
+      "B": "Google Hangout",
+      "C": "Google+",
+      "D": "Google Drive"
+    },
+    "correct": "A"
+  },
+  {
+    "question": "Ứng dụng nào dưới đây cho phép tạo tập tin trình chiếu trực tuyến?",
+    "answers": {
+      "A": "OpenOffice.org Impress",
+      "B": "LibreOffice Impress",
+      "C": "Google Slides",
+      "D": "MS PowerPoint"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "VGA là viết tắt của thuật ngữ gì?",
+    "answers": {
+      "A": "Video Graphics Area",
+      "B": "Video Graphical Array",
+      "C": "Video Graphics Array",
+      "D": "Video Graphical Area"
+    },
+    "correct": "C"
+  },
+  {
+    "question": "Vì sao việc sao lưu các dữ liệu là rất cần thiết?",
+    "answers": {
+      "A": "Để phòng chống virus",
+      "B": "Để phòng chống malware",
+      "C": "Để bảo mật dữ liệu",
+      "D": "Để phòng ngừa những bất trắc làm hỏng dữ liệu có thể xảy ra"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "YouTube là dịch vụ của công ty nào?",
+    "answers": {
+      "A": "Microsoft",
+      "B": "Samsung",
+      "C": "Apple",
+      "D": "Google"
+    },
+    "correct": "D"
+  },
+  {
+    "question": "YouTube là loại dịch vụ gì trên Internet?",
+    "answers": {
+      "A": "Tìm và chia sẻ nhạc",
+      "B": "Tìm đường đi",
+      "C": "Tìm và chia sẻ phim",
+      "D": "Tìm và chia sẻ hình ảnh"
+    },
+    "correct": "C"
+  }
+];
+
+  let currentMode = 'practice';
+
+  function renderQuestions() {
+    const container = document.getElementById('questionContainer');
+    container.innerHTML = questions.map((q, index) => `
+      <div class="question-card" data-aos="fade-up">
+        <span class="q-number">Câu ${index + 1}</span>
+        <h5 class="card-title">${q.question}</h5>
+        <div class="options">
+          ${Object.entries(q.answers).map(([key, value]) => `
+            <div class="answer ${currentMode === 'review' && key === q.correct ? 'correct' : ''}" 
+                 onclick="checkAnswer(this, '${key}', '${q.correct}')">
+              <span class="answer-prefix">${key}.</span>
+              <span class="answer-text">${value}</span>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function checkAnswer(element, selected, correct) {
+    if (currentMode === 'review') return; // Không cho click ở chế độ xem đáp án
+
+    // Xóa trạng thái cũ trong cùng 1 câu hỏi
+    const parent = element.parentElement;
+    parent.querySelectorAll('.answer').forEach(el => el.classList.remove('correct', 'wrong'));
+
+    if (selected === correct) {
+      element.classList.add('correct');
+    } else {
+      element.classList.add('wrong');
+      // Hiện luôn đáp án đúng để người dùng học
+      parent.querySelectorAll('.answer').forEach(el => {
+        if(el.querySelector('.answer-prefix').innerText.includes(correct)) {
+          el.classList.add('correct');
+        }
+      });
+    }
+  }
+
+  function switchMode(mode) {
+    currentMode = mode;
+    document.getElementById('modePractice').classList.toggle('active', mode === 'practice');
+    document.getElementById('modeReview').classList.toggle('active', mode === 'review');
+    renderQuestions();
+  }
+
+  // Thanh Progress khi cuộn trang
+  window.onscroll = function() {
+    let winScroll = document.body.scrollTop || document.documentElement.scrollTop;
+    let height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
+    let scrolled = (winScroll / height) * 100;
+    document.getElementById("progressBar").style.width = scrolled + "%";
+  };
+
+  // Khởi tạo lần đầu
+  renderQuestions();
+</script>
+
+</body>
+</html>
