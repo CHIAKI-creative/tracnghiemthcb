@@ -167,6 +167,14 @@
       width: 0%;
       transition: width 0.3s;
     }
+    #searchInput:focus {
+      box-shadow: 0 0 0 0.25rem rgba(67, 97, 238, 0.15);
+      border-color: var(--primary-color);
+    }
+
+    mark {
+      color: inherit;
+    }
   </style>
 </head>
 
@@ -4221,31 +4229,67 @@
   }
 ];
 
-  let currentMode = 'practice';
+let currentMode = 'practice';
+  let searchTerm = '';
 
-  function renderQuestions() {
+  // Hàm hiển thị câu hỏi (đã sửa để hỗ trợ lọc)
+  function renderQuestions(dataToRender = questions) {
     const container = document.getElementById('questionContainer');
-    container.innerHTML = questions.map((q, index) => `
-      <div class="question-card" data-aos="fade-up">
-        <span class="q-number">Câu ${index + 1}</span>
-        <h5 class="card-title">${q.question}</h5>
-        <div class="options">
-          ${Object.entries(q.answers).map(([key, value]) => `
-            <div class="answer ${currentMode === 'review' && key === q.correct ? 'correct' : ''}" 
-                 onclick="checkAnswer(this, '${key}', '${q.correct}')">
-              <span class="answer-prefix">${key}.</span>
-              <span class="answer-text">${value}</span>
-            </div>
-          `).join('')}
+    
+    if (dataToRender.length === 0) {
+      container.innerHTML = `
+        <div class="text-center py-5">
+          <i class="fas fa-search fa-3x text-muted mb-3"></i>
+          <p class="text-muted">Không tìm thấy câu hỏi nào phù hợp với từ khóa "${searchTerm}"</p>
+        </div>`;
+      return;
+    }
+
+    container.innerHTML = dataToRender.map((q, index) => {
+      // Tìm vị trí gốc trong mảng questions để hiển thị đúng số "Câu X"
+      const originalIndex = questions.indexOf(q); 
+      
+      return `
+        <div class="question-card">
+          <span class="q-number">Câu ${originalIndex + 1}</span>
+          <h5 class="card-title">${highlightText(q.question, searchTerm)}</h5>
+          <div class="options">
+            ${Object.entries(q.answers).map(([key, value]) => `
+              <div class="answer ${currentMode === 'review' && key === q.correct ? 'correct' : ''}" 
+                   onclick="checkAnswer(this, '${key}', '${q.correct}')">
+                <span class="answer-prefix">${key}.</span>
+                <span class="answer-text">${highlightText(value, searchTerm)}</span>
+              </div>
+            `).join('')}
+          </div>
         </div>
-      </div>
-    `).join('');
+      `;
+    }).join('');
   }
 
-  function checkAnswer(element, selected, correct) {
-    if (currentMode === 'review') return; // Không cho click ở chế độ xem đáp án
+  // Chức năng tìm kiếm
+  document.getElementById('searchInput').addEventListener('input', function(e) {
+    searchTerm = e.target.value.toLowerCase().trim();
+    
+    // Lọc câu hỏi dựa trên tiêu đề hoặc các lựa chọn trả lời
+    const filtered = questions.filter(q => {
+      const content = (q.question + Object.values(q.answers).join(' ')).toLowerCase();
+      return content.includes(searchTerm);
+    });
 
-    // Xóa trạng thái cũ trong cùng 1 câu hỏi
+    renderQuestions(filtered);
+  });
+
+  // Hàm tạo hiệu ứng highlight từ khóa khi tìm kiếm (tùy chọn - giúp giao diện đẹp hơn)
+  function highlightText(text, query) {
+    if (!query) return text;
+    const re = new RegExp(`(${query})`, "gi");
+    return text.replace(re, `<mark style="background: #ffec99; padding: 0; border-radius: 2px;">$1</mark>`);
+  }
+
+  // Hàm kiểm tra đáp án
+  function checkAnswer(element, selected, correct) {
+    if (currentMode === 'review') return;
     const parent = element.parentElement;
     parent.querySelectorAll('.answer').forEach(el => el.classList.remove('correct', 'wrong'));
 
@@ -4253,7 +4297,6 @@
       element.classList.add('correct');
     } else {
       element.classList.add('wrong');
-      // Hiện luôn đáp án đúng để người dùng học
       parent.querySelectorAll('.answer').forEach(el => {
         if(el.querySelector('.answer-prefix').innerText.includes(correct)) {
           el.classList.add('correct');
@@ -4262,14 +4305,22 @@
     }
   }
 
+  // Chuyển đổi chế độ
   function switchMode(mode) {
     currentMode = mode;
     document.getElementById('modePractice').classList.toggle('active', mode === 'practice');
     document.getElementById('modeReview').classList.toggle('active', mode === 'review');
-    renderQuestions();
+    
+    // Sau khi chuyển chế độ, vẫn giữ kết quả tìm kiếm nếu có
+    const currentInput = document.getElementById('searchInput').value.toLowerCase().trim();
+    const dataToRender = currentInput ? 
+      questions.filter(q => (q.question + Object.values(q.answers).join(' ')).toLowerCase().includes(currentInput)) : 
+      questions;
+      
+    renderQuestions(dataToRender);
   }
 
-  // Thanh Progress khi cuộn trang
+  // Thanh Progress
   window.onscroll = function() {
     let winScroll = document.body.scrollTop || document.documentElement.scrollTop;
     let height = document.documentElement.scrollHeight - document.documentElement.clientHeight;
@@ -4277,7 +4328,7 @@
     document.getElementById("progressBar").style.width = scrolled + "%";
   };
 
-  // Khởi tạo lần đầu
+  // Khởi tạo
   renderQuestions();
 </script>
 
